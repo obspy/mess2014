@@ -310,21 +310,22 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
     """
     If event is given, the event distance in degree will also be attached.
     """
-    if event:
-        event_lat = event.origins[0].latitude
-        event_lng = event.origins[0].longitude
-
     # Get the coordinates for all stations
     coords = {}
     for network in inventory:
         for station in network:
             coords["%s.%s" % (network.code, station.code)] = \
-                {"latitude": station.latitude, "longitude": station.longitude}
+                {"latitude": station.latitude,
+                 "longitude": station.longitude,
+                 "elevation": station.elevation}
 
     # Calculate the event-station distances.
-    for value in coords.values():
-        value["distance"] = locations2degrees(
-            value["latitude"], value["longitude"], event_lat, event_lng)
+    if event:
+        event_lat = event.origins[0].latitude
+        event_lng = event.origins[0].longitude
+        for value in coords.values():
+            value["distance"] = locations2degrees(
+                value["latitude"], value["longitude"], event_lat, event_lng)
 
     # Attach the information to the traces.
     for trace in stream:
@@ -332,8 +333,10 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
         value = coords[station]
         trace.stats.coordinates = AttribDict()
         trace.stats.coordinates.latitude = value["latitude"]
-        trace.stats.coordinates.latitude = value["longitude"]
-        trace.stats.distance = value["distance"]
+        trace.stats.coordinates.longitude = value["longitude"]
+        trace.stats.coordinates.elevation = value["elevation"]
+        if event:
+            trace.stats.distance = value["distance"]
 
 
 def show_distance_plot(stream, event, inventory, starttime, endtime,
