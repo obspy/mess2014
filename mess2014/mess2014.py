@@ -315,13 +315,15 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 
     # Get the coordinates for all stations
     coords = {}
-    for network in inv:
+    for network in inventory:
         for station in network:
-            coords["%s.%s" % (network.code, station.code)] = {"latitude": station.latitude, "longitude": station.longitude}
+            coords["%s.%s" % (network.code, station.code)] = \
+                {"latitude": station.latitude, "longitude": station.longitude}
 
     # Calculate the event-station distances.
     for value in coords.values():
-        value["distance"] = locations2degrees(value["latitude"], value["longitude"], event_lat, event_lng)
+        value["distance"] = locations2degrees(
+            value["latitude"], value["longitude"], event_lat, event_lng)
 
     # Attach the information to the traces.
     for trace in stream:
@@ -333,7 +335,8 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
         trace.stats.distance = value["distance"]
 
 
-def show_distance_plot(stream, event, inventory, starttime, endtime):
+def show_distance_plot(stream, event, inventory, starttime, endtime,
+                       plot_travel_times=True):
     """
     Plots distance dependent waveforms.
     """
@@ -345,8 +348,7 @@ def show_distance_plot(stream, event, inventory, starttime, endtime):
 
     cm = plt.cm.jet
 
-    # Now create a section plot.
-    stream.traces = sorted(stream.traces, key= lambda x: x.stats.distance)[::-1]
+    stream.traces = sorted(stream.traces, key=lambda x: x.stats.distance)[::-1]
 
     # One color for each trace.
     colors = [cm(_i) for _i in np.linspace(0, 1, len(stream))]
@@ -363,12 +365,13 @@ def show_distance_plot(stream, event, inventory, starttime, endtime):
     # Normalize data and "shift to distance".
     stream.normalize()
     for tr in stream:
-        tr.data *= data_range
+        tr.data *= stream_range
         tr.data += tr.stats.distance
 
     plt.figure(figsize=(20, 12))
     for _i, tr in enumerate(stream):
-        plt.plot(times_array, tr.data, label="%s.%s" % (tr.stats.network, tr.stats.station), color=colors[_i])
+        plt.plot(times_array, tr.data, label="%s.%s" % (tr.stats.network,
+                 tr.stats.station), color=colors[_i])
     plt.grid()
     plt.ylabel("Distance in degree to event")
     plt.xlabel("Time in seconds since event")
@@ -376,37 +379,36 @@ def show_distance_plot(stream, event, inventory, starttime, endtime):
 
     dist_min, dist_max = plt.ylim()
 
+    if plot_travel_times:
 
-    distances = defaultdict(list)
-    ttimes = defaultdict(list)
+        distances = defaultdict(list)
+        ttimes = defaultdict(list)
 
-    plot_start = stream[0].stats.starttime - event_time
+        for i in np.linspace(dist_min, dist_max, 1000):
+            tts = getTravelTimes(i, event_depth_in_km, "ak135")
+            for phase in tts:
+                name = phase["phase_name"]
+                distances[name].append(i)
+                ttimes[name].append(phase["time"])
 
-    for i in np.linspace(dist_min, dist_max, 1000):
-        tts = getTravelTimes(i, event_depth_in_km, "ak135")
-        for phase in tts:
-            name = phase["phase_name"]
-            distances[name].append(i)
-            ttimes[name].append(phase["time"])
+        for key in distances.iterkeys():
+            min_distance = min(distances[key])
+            max_distance = max(distances[key])
+            min_tt_time = min(ttimes[key])
+            max_tt_time = max(ttimes[key])
 
-    for key in distances.iterkeys():
-        min_distance = min(distances[key])
-        max_distance = max(distances[key])
-        min_tt_time = min(ttimes[key])
-        max_tt_time = max(ttimes[key])
-
-        if min_tt_time >= times_array[-1] or \
-                max_tt_time <= times_array[0] or \
-                (max_distance - min_distance) < 0.8 * (dist_max - dist_min):
-            continue
-        ttime = ttimes[key]
-        dist = distances[key]
-        if max(ttime) > times_array[0] + 0.9 * times_array.ptp():
-            continue
-        plt.scatter(ttime, dist, s=0.5, zorder=-10, color="black", alpha=0.8)
-        plt.text(max(ttime) + 0.005 * times_array.ptp(),
-                 dist_max - 0.02 * (dist_max - dist_min),
-                 key)
+            if min_tt_time >= times_array[-1] or \
+                    max_tt_time <= times_array[0] or \
+                    (max_distance - min_distance) < 0.8 * (dist_max - dist_min):
+                continue
+            ttime = ttimes[key]
+            dist = distances[key]
+            if max(ttime) > times_array[0] + 0.9 * times_array.ptp():
+                continue
+            plt.scatter(ttime, dist, s=0.5, zorder=-10, color="black", alpha=0.8)
+            plt.text(max(ttime) + 0.005 * times_array.ptp(),
+                     dist_max - 0.02 * (dist_max - dist_min),
+                     key)
 
     plt.ylim(dist_min, dist_max)
     plt.xlim(times_array[0], times_array[-1])
@@ -414,3 +416,29 @@ def show_distance_plot(stream, event, inventory, starttime, endtime):
     plt.title(event.short_str())
 
     plt.show()
+
+
+def align_phases(stream, event, inventory, phase_name):
+    stream = stream.copy()
+    attach_coordinates_to_traces(stream, inventory, event)
+
+    stream.traces = sorted(stream.traces, key=lambda x: x.stats.distance)[::-1]
+
+    tr_1 = stream[-1]
+    tt_1 = getTravelTimes(tr_1.stats.distance, event.origins[0].depth / 1000.0, "ak135")
+    for tt in tt_1:
+        if tt["phase_name"] != phase_name:
+            continue
+        tt_1 = tt["time"]
+        break
+
+    for tr in stream:
+        tt = getTravelTimes(tr.stats.distance, event.origins[0].depth / 1000.0, "ak135")
+        for t in tt:
+            if t["phase_name"] != phase_name:
+                continue
+            tt = t["time"]
+            break
+        tr.stats.starttime -= (tt - tt_1)
+
+    return stream
