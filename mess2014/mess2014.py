@@ -6,9 +6,10 @@ import os
 import shutil
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
-from obspy import UTCDateTime
+from obspy import UTCDateTime, Stream
 from obspy.core import AttribDict
-from obspy.core.util.geodetics import locations2degrees
+from obspy.core.util.geodetics import locations2degrees, gps2DistAzimuth, \
+    kilometer2degrees
 import obspy.signal.array_analysis as AA
 from obspy.taup import getTravelTimes
 import scipy.interpolate as spi
@@ -442,3 +443,165 @@ def align_phases(stream, event, inventory, phase_name):
         tr.stats.starttime -= (tt - tt_1)
 
     return stream
+
+
+def vespagram(stream, ev, inv, method, frqlow, frqhigh, baz, scale, nthroot=4,
+              filter=True, static3D=False, vel_corr=4.8, sl=(0.0, 10.0, 0.1),
+              align=False, align_phase=['P', 'Pdiff'], plot_trace=True):
+
+    starttime = max([tr.stats.starttime for tr in stream])
+    endtime = min([tr.stats.endtime for tr in stream])
+    stream.trim(starttime, endtime)
+
+    org = ev.preferred_origin() or ev.origins[0]
+    ev_lat = org.latitude
+    ev_lon = org.longitude
+    ev_depth = org.depth/1000.  # in km
+    ev_otime = org.time
+
+    sll, slm, sls = sl
+    sll /= KM_PER_DEG
+    slm /= KM_PER_DEG
+    sls /= KM_PER_DEG
+    center_lon = 0.
+    center_lat = 0.
+    center_elv = 0.
+    seismo = stream
+    seismo.attach_response(inv)
+    seismo.merge()
+    sz = Stream()
+    i = 0
+    for tr in seismo:
+        for station in inv[0].stations:
+            if tr.stats.station == station.code:
+                tr.stats.coordinates = \
+                    AttribDict({'latitude': station.latitude,
+                                'longitude': station.longitude,
+                                'elevation': station.elevation})
+                center_lon += station.longitude
+                center_lat += station.latitude
+                center_elv += station.elevation
+                i += 1
+        sz.append(tr)
+
+    center_lon /= float(i)
+    center_lat /= float(i)
+    center_elv /= float(i)
+
+    starttime = max([tr.stats.starttime for tr in stream])
+    stt = starttime
+    endtime = min([tr.stats.endtime for tr in stream])
+    e = endtime
+    stream.trim(starttime, endtime)
+
+    #nut = 0
+    max_amp = 0.
+    sz.trim(stt, e)
+    sz.detrend('simple')
+
+    print sz
+    fl, fh = frqlow, frqhigh
+    if filter:
+        sz.filter('bandpass', freqmin=fl, freqmax=fh, zerophase=True)
+
+    if align:
+        deg = []
+        shift = []
+        res = gps2DistAzimuth(center_lat, center_lon, ev_lat, ev_lon)
+        deg.append(kilometer2degrees(res[0]/1000.))
+        tt = getTravelTimes(deg[0], ev_depth, model='ak135')
+        for item in tt:
+            phase = item['phase_name']
+            if phase in align_phase:
+                try:
+                    travel = item['time']
+                    travel = ev_otime.timestamp + travel
+                    dtime = travel - stt.timestamp
+                    shift.append(dtime)
+                except:
+                    break
+        for i, tr in enumerate(sz):
+            res = gps2DistAzimuth(tr.stats.coordinates['latitude'],
+                                  tr.stats.coordinates['longitude'],
+                                  ev_lat, ev_lon)
+            deg.append(kilometer2degrees(res[0]/1000.))
+            tt = getTravelTimes(deg[i+1], ev_depth, model='ak135')
+            for item in tt:
+                phase = item['phase_name']
+                if phase in align_phase:
+                    try:
+                        travel = item['time']
+                        travel = ev_otime.timestamp + travel
+                        dtime = travel - stt.timestamp
+                        shift.append(dtime)
+                    except:
+                        break
+        shift = np.asarray(shift)
+        shift -= shift[0]
+        AA.shifttrace_freq(sz, -shift)
+
+    baz += 180.
+    nbeam = int((slm - sll)/sls + 0.5) + 1
+    kwargs = dict(
+        # slowness grid: X min, X max, Y min, Y max, Slow Step
+        sll=sll, slm=slm, sls=sls, baz=baz, stime=stt, method=method,
+        nthroot=nthroot, etime=e, correct_3dplane=False, static_3D=static3D,
+        vel_cor=vel_corr)
+
+    start = UTCDateTime()
+    slow, beams, max_beam, beam_max = AA.vespagram_baz(sz, **kwargs)
+    print "Total time in routine: %f\n" % (UTCDateTime() - start)
+
+    df = sz[0].stats.sampling_rate
+    # Plot the seismograms
+    npts = len(beams[0])
+    print npts
+    T = np.arange(0, npts/df, 1/df)
+    sll *= KM_PER_DEG
+    slm *= KM_PER_DEG
+    sls *= KM_PER_DEG
+    slow = np.arange(sll, slm, sls)
+    max_amp = np.max(beams[:, :])
+    #min_amp = np.min(beams[:, :])
+    scale *= sls
+
+    fig = plt.figure()
+
+    if plot_trace:
+        ax1 = fig.add_axes([0.1, 0.1, 0.85, 0.85])
+        for i in xrange(nbeam):
+            if i == max_beam:
+                ax1.plot(T, sll + scale*beams[i]/max_amp + i*sls, 'r',
+                         zorder=1)
+            else:
+                ax1.plot(T, sll + scale*beams[i]/max_amp + i*sls, 'k',
+                         zorder=-1)
+        ax1.set_xlabel('Time [s]')
+        ax1.set_ylabel('slowness [s/deg]')
+        ax1.set_xlim(T[0], T[-1])
+        ax1.set_ylim(slow[0], slow[-1])
+    #####
+    else:
+        #step = (max_amp - min_amp)/100.
+        #level = np.arange(min_amp, max_amp, step)
+        #beams = beams.transpose()
+        #cmap = cm.hot_r
+        cmap = cm.rainbow
+
+        ax1 = fig.add_axes([0.1, 0.1, 0.85, 0.85])
+        #ax1.contour(slow,T,beams,level)
+        #extent = (slow[0], slow[-1], \
+        #               T[0], T[-1])
+        extent = (T[0], T[-1], slow[0], slow[-1])
+
+        ax1.set_ylabel('slowness [s/deg]')
+        ax1.set_xlabel('T [s]')
+        beams = np.flipud(beams)
+        ax1.imshow(beams, cmap=cmap, interpolation="nearest",
+                   extent=extent, aspect='auto')
+
+    ####
+    result = "BAZ: %.2f Time %s" % (baz-180., stt)
+    ax1.set_title(result)
+
+    plt.show()
