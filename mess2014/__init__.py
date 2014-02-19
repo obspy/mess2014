@@ -1,1 +1,1 @@
-from mess2014 import array_analysis_helper
+from mess2014 import array_analysis_helper, show_distance_plot

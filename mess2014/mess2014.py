@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from collections import defaultdict
 import tempfile
 import numpy as np
 import os
@@ -7,7 +8,9 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from obspy import UTCDateTime
 from obspy.core import AttribDict
+from obspy.core.util.geodetics import locations2degrees
 import obspy.signal.array_analysis as AA
+from obspy.taup import getTravelTimes
 import scipy.interpolate as spi
 import matplotlib.cm as cm
 
@@ -300,3 +303,114 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                 plt.show()
     finally:
         shutil.rmtree(tmpdir)
+
+
+def attach_coordinates_to_traces(stream, inventory, event=None):
+    """
+    If event is given, the event distance in degree will also be attached.
+    """
+    if event:
+        event_lat = event.origins[0].latitude
+        event_lng = event.origins[0].longitude
+
+    # Get the coordinates for all stations
+    coords = {}
+    for network in inv:
+        for station in network:
+            coords["%s.%s" % (network.code, station.code)] = {"latitude": station.latitude, "longitude": station.longitude}
+
+    # Calculate the event-station distances.
+    for value in coords.values():
+        value["distance"] = locations2degrees(value["latitude"], value["longitude"], event_lat, event_lng)
+
+    # Attach the information to the traces.
+    for trace in stream:
+        station = ".".join(trace.id.split(".")[:2])
+        value = coords[station]
+        trace.stats.coordinates = AttribDict()
+        trace.stats.coordinates.latitude = value["latitude"]
+        trace.stats.coordinates.latitude = value["longitude"]
+        trace.stats.distance = value["distance"]
+
+
+def show_distance_plot(stream, event, inventory, starttime, endtime):
+    """
+    Plots distance dependent waveforms.
+    """
+    stream = stream.slice(starttime=starttime, endtime=endtime).copy()
+    event_depth_in_km = event.origins[0].depth / 1000.0
+    event_time = event.origins[0].time
+
+    attach_coordinates_to_traces(stream, inventory, event=event)
+
+    cm = plt.cm.jet
+
+    # Now create a section plot.
+    stream.traces = sorted(stream.traces, key= lambda x: x.stats.distance)[::-1]
+
+    # One color for each trace.
+    colors = [cm(_i) for _i in np.linspace(0, 1, len(stream))]
+
+    # Relative event times.
+    times_array = stream[0].times() + (stream[0].stats.starttime - event_time)
+
+    distances = [tr.stats.distance for tr in stream]
+    min_distance = min(distances)
+    max_distance = max(distances)
+    distance_range = max_distance - min_distance
+    stream_range = distance_range / 10.0
+
+    # Normalize data and "shift to distance".
+    stream.normalize()
+    for tr in stream:
+        tr.data *= data_range
+        tr.data += tr.stats.distance
+
+    plt.figure(figsize=(20, 12))
+    for _i, tr in enumerate(stream):
+        plt.plot(times_array, tr.data, label="%s.%s" % (tr.stats.network, tr.stats.station), color=colors[_i])
+    plt.grid()
+    plt.ylabel("Distance in degree to event")
+    plt.xlabel("Time in seconds since event")
+    plt.legend()
+
+    dist_min, dist_max = plt.ylim()
+
+
+    distances = defaultdict(list)
+    ttimes = defaultdict(list)
+
+    plot_start = stream[0].stats.starttime - event_time
+
+    for i in np.linspace(dist_min, dist_max, 1000):
+        tts = getTravelTimes(i, event_depth_in_km, "ak135")
+        for phase in tts:
+            name = phase["phase_name"]
+            distances[name].append(i)
+            ttimes[name].append(phase["time"])
+
+    for key in distances.iterkeys():
+        min_distance = min(distances[key])
+        max_distance = max(distances[key])
+        min_tt_time = min(ttimes[key])
+        max_tt_time = max(ttimes[key])
+
+        if min_tt_time >= times_array[-1] or \
+                max_tt_time <= times_array[0] or \
+                (max_distance - min_distance) < 0.8 * (dist_max - dist_min):
+            continue
+        ttime = ttimes[key]
+        dist = distances[key]
+        if max(ttime) > times_array[0] + 0.9 * times_array.ptp():
+            continue
+        plt.scatter(ttime, dist, s=0.5, zorder=-10, color="black", alpha=0.8)
+        plt.text(max(ttime) + 0.005 * times_array.ptp(),
+                 dist_max - 0.02 * (dist_max - dist_min),
+                 key)
+
+    plt.ylim(dist_min, dist_max)
+    plt.xlim(times_array[0], times_array[-1])
+
+    plt.title(event.short_str())
+
+    plt.show()
