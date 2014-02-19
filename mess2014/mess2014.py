@@ -74,7 +74,8 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                 break
 
     if filter:
-        stream.filter('bandpass', freqmin=frqlow, freqmax=frqhigh, zerophase=True)
+        stream.filter('bandpass', freqmin=frqlow, freqmax=frqhigh,
+                      zerophase=True)
 
     print stream
 
@@ -155,9 +156,9 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                 tf_sly = slly
                 tf_smy = slmy
                 transff = AA.array_transff_freqslowness(
-                    stream, (tf_slx, tf_smx, tf_sly, tf_smy), sls, frqlow, frqhigh,
-                    stepsfreq, coordsys='lonlat', correct_3dplane=False,
-                    static_3D=False, vel_cor=vc)
+                    stream, (tf_slx, tf_smx, tf_sly, tf_smy), sls, frqlow,
+                    frqhigh, stepsfreq, coordsys='lonlat',
+                    correct_3dplane=False, static_3D=False, vel_cor=vc)
 
             # now let's do the plotting
             cmap = cm.rainbow
@@ -299,6 +300,3 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                 plt.show()
     finally:
         shutil.rmtree(tmpdir)
-
-
-
