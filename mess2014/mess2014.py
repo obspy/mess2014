@@ -101,7 +101,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
         # estimated
         # XXX
         velgrid = np.arange(4.8, 4.9, 0.2)
-        velgrid = np.arange([vel_corr])
+        velgrid = np.array([vel_corr])
         for vc in velgrid:
             print vc
             sllx /= KM_PER_DEG
