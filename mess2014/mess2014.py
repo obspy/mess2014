@@ -587,7 +587,9 @@ def vespagram(stream, ev, inv, method, frqlow, frqhigh, baz, scale, nthroot=4,
         ax1.set_xlabel('Time [s]')
         ax1.set_ylabel('slowness [s/deg]')
         ax1.set_xlim(T[0], T[-1])
-        ax1.set_ylim(slow[0], slow[-1])
+        data_minmax = ax1.yaxis.get_data_interval()
+        minmax = [min(slow[0], data_minmax[0]), max(slow[-1], data_minmax[1]]
+        ax1.set_ylim(*minmax)
     #####
     else:
         #step = (max_amp - min_amp)/100.
