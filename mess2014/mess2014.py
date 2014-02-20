@@ -613,3 +613,4 @@ def vespagram(stream, ev, inv, method, frqlow, frqhigh, baz, scale, nthroot=4,
     ax1.set_title(result)
 
     plt.show()
+    return slow, beams, max_beam, beam_max
