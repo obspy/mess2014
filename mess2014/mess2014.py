@@ -30,7 +30,8 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :type stream: :class:`obspy.core.stream.Stream`
     :param inventory: Station metadata for waveforms
     :type inventory: :class:`obspy.station.inventory.Inventory`
-    :param method: Method used for the array analysis (one of "FK", "DLS")
+    :param method: Method used for the array analysis
+        (one of "FK", "DLS", "PWS", "SWP").
     :type method: str
     :param filter: Whether to bandpass data to selected frequency range
     :type filter: bool
@@ -59,6 +60,10 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :param array_response: superimpose array reponse function in plot (slow!)
     :type array_response: bool
     """
+
+    if method not in ("FK", "DLS", "PWS", "SWP"):
+        raise ValueError("Invalid method: ''" % method)
+
     sllx, slmx = slx
     slly, slmy = sly
 
@@ -138,7 +143,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                     # restrict output
                     store=dump,
                     win_len=wlen, win_frac=0.5,
-                    nthroot=4, method='DLS',
+                    nthroot=4, method=method,
                     verbose=False, timestamp='julsec',
                     stime=starttime, etime=endtime, vel_cor=vc,
                     static_3D=False)
