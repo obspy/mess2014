@@ -22,7 +22,7 @@ KM_PER_DEG = 111.1949
 def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                           filter=True, baz_plot=True, static3D=False,
                           vel_corr=4.8, wlen=-1, slx=(-10, 10),
-                          sly=(-10, 10), sls=0.2, array_response=True):
+                          sly=(-10, 10), sls=0.5, array_response=True):
     """
     Array analysis wrapper routine for MESS 2014.
 
@@ -454,7 +454,7 @@ def align_phases(stream, event, inventory, phase_name):
 
 
 def vespagram(stream, ev, inv, method, frqlow, frqhigh, baz, scale, nthroot=4,
-              filter=True, static3D=False, vel_corr=4.8, sl=(0.0, 10.0, 0.1),
+              filter=True, static3D=False, vel_corr=4.8, sl=(0.0, 10.0, 0.5),
               align=False, align_phase=['P', 'Pdiff'], plot_trace=True):
 
     starttime = max([tr.stats.starttime for tr in stream])
