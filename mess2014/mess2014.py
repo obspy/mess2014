@@ -21,7 +21,7 @@ KM_PER_DEG = 111.1949
 
 def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                           filter=True, baz_plot=True, static3D=False,
-                          vel_corr=4.8, wlen=None, slx=(-10, 10),
+                          vel_corr=4.8, wlen=-1, slx=(-10, 10),
                           sly=(-10, 10), sls=0.2, array_response=True):
     """
     Array analysis wrapper routine for MESS 2014.
@@ -48,7 +48,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :param vel_corr: Correction velocity for static topography correction in
         km/s.
     :type vel_corr: float
-    :param wlen: sliding window for analysis in seconds, 0 to use the whole
+    :param wlen: sliding window for analysis in seconds, use -1 to use the whole
         trace without windowing.
     :type wlen: float
     :param slx: Min/Max slowness for analysis in x direction.
