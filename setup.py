@@ -1,10 +1,10 @@
 from setuptools import setup
 
-INSTALL_REQUIRES = [
-    'numpy',
-    'scipy',
-    'matplotlib',
-    'obspy']
+#INSTALL_REQUIRES = [
+#    'numpy',
+#    'scipy',
+#    'matplotlib',
+#    'obspy']
 
 setup(
     name="mess2014",
@@ -13,7 +13,7 @@ setup(
     author="Joachim Wassermann, Lion Krischer, Tobias Megies",
     url="https://github.com/obspy/mess2014",
     download_url="https://github.com/obspy/mess2014.git",
-    install_requires=INSTALL_REQUIRES,
+    install_requires=[],
     keywords=["ObsPy", "Seismology", "MESS"],
     packages=["mess2014"],
     entry_points={},
