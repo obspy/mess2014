@@ -192,6 +192,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
 
             numslice = len(t)
             powmap = []
+            trace = []
             slx = np.arange(sllx-sls, slmx, sls)
             sly = np.arange(slly-sls, slmy, sls)
             if baz_plot:
@@ -204,8 +205,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
             for i in xrange(numslice):
                 powmap.append(np.load(filename_patterns[0] % i))
                 if method != 'FK':
-                    pass
-                    #trace.append(np.load(filename_patterns[1] % i))
+                    trace.append(np.load(filename_patterns[1] % i))
 
             T = spl[0].times()
 
@@ -225,8 +225,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                     ax1.plot(T, spl[0].data, 'k')
                     ax1.axvspan(st, en, facecolor='g', alpha=0.3)
                 else:
-                    pass
-                    #ax1.plot(T, trace[i], 'k')
+                    ax1.plot(T, trace[i], 'k')
 
                 ax1.yaxis.set_major_locator(MaxNLocator(3))
                 l, u = ax1.get_ylim()
