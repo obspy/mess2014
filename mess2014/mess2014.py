@@ -48,8 +48,8 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :param vel_corr: Correction velocity for static topography correction in
         km/s.
     :type vel_corr: float
-    :param wlen: sliding window for analysis in seconds, use -1 to use the whole
-        trace without windowing.
+    :param wlen: sliding window for analysis in seconds, use -1 to use the
+        whole trace without windowing.
     :type wlen: float
     :param slx: Min/Max slowness for analysis in x direction.
     :type slx: (float, float)
@@ -187,7 +187,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
             else:
                 if wlen <= 0.:
                     spl = stream.copy()
-                    spl[0].data = max_beam[0]
+                    #spl[0].data = max_beam[0]
                     spl.trim(starttime, endtime)
 
             numslice = len(t)
@@ -204,7 +204,8 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
             for i in xrange(numslice):
                 powmap.append(np.load(filename_patterns[0] % i))
                 if method != 'FK':
-                    trace.append(np.load(filename_patterns[1] % i))
+                    pass
+                    #trace.append(np.load(filename_patterns[1] % i))
 
             npts = spl[0].stats.npts
             df = spl[0].stats.sampling_rate
@@ -229,7 +230,8 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                     except IndexError:
                         pass
                 else:
-                    ax1.plot(T, trace[i], 'k')
+                    pass
+                    #ax1.plot(T, trace[i], 'k')
 
                 ax1.yaxis.set_major_locator(MaxNLocator(3))
                 l, u = ax1.get_ylim()
