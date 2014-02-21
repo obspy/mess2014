@@ -427,7 +427,16 @@ def show_distance_plot(stream, event, inventory, starttime, endtime,
     plt.show()
 
 
-def align_phases(stream, event, inventory, phase_name):
+def align_phases(stream, event, inventory, phase_name, method="simple"):
+    """
+    Method either 'simple' or 'fft'. Simple will just shift the starttime of
+    Trace, while 'fft' will do the shift in the frequency domain.
+    """
+    method = method.lower()
+    if method not in ['simple', 'fft']:
+        msg = "method must be 'simple' or 'fft'"
+        raise ValueError(msg)
+
     stream = stream.copy()
     attach_coordinates_to_traces(stream, inventory, event)
 
@@ -435,6 +444,7 @@ def align_phases(stream, event, inventory, phase_name):
 
     tr_1 = stream[-1]
     tt_1 = getTravelTimes(tr_1.stats.distance, event.origins[0].depth / 1000.0, "ak135")
+
     for tt in tt_1:
         if tt["phase_name"] != phase_name:
             continue
@@ -448,8 +458,10 @@ def align_phases(stream, event, inventory, phase_name):
                 continue
             tt = t["time"]
             break
-        tr.stats.starttime -= (tt - tt_1)
-
+        if method == "simple":
+            tr.stats.starttime -= (tt - tt_1)
+        else:
+            AA.shifttrace_freq(Stream(traces=[tr]), [- ((tt - tt_1))])
     return stream
 
 
