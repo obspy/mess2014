@@ -109,6 +109,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
             slly /= KM_PER_DEG
             slmy /= KM_PER_DEG
             sls /= KM_PER_DEG
+            start = UTCDateTime()
             if method == 'FK':
                 kwargs = dict(
                     #slowness grid: X min, X max, Y min, Y max, Slow Step
@@ -125,10 +126,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                     static_3D=static3D)
 
                 # here we do the array processing
-                start = UTCDateTime()
                 out = AA.array_processing(stream, **kwargs)
-                print "Total time in routine: %f\n" % (UTCDateTime() - start)
-
                 # make output human readable, adjust backazimuth to values
                 # between 0 and 360
                 t, rel_power, abs_power, baz, slow = out.T
@@ -146,16 +144,15 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                     nthroot=4, method=method,
                     verbose=False, timestamp='julsec',
                     stime=starttime, etime=endtime, vel_cor=vc,
-                    static_3D=False)
+                    static_3D=static3D)
 
                 # here we do the array processing
-                start = UTCDateTime()
                 out = AA.beamforming(stream, **kwargs)
-                print "Total time in routine: %f\n" % (UTCDateTime() - start)
-
                 # make output human readable, adjust backazimuth to values
                 # between 0 and 360
                 t, rel_power, baz, slow_x, slow_y, slow = out.T
+
+            print "Total time in routine: %f\n" % (UTCDateTime() - start)
 
             # calculating array response
             if array_response:
@@ -167,7 +164,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                 transff = AA.array_transff_freqslowness(
                     stream, (tf_slx, tf_smx, tf_sly, tf_smy), sls, frqlow,
                     frqhigh, stepsfreq, coordsys='lonlat',
-                    correct_3dplane=False, static_3D=False, vel_cor=vc)
+                    correct_3dplane=False, static_3D=static3D, vel_cor=vc)
 
             # now let's do the plotting
             cmap = cm.rainbow
