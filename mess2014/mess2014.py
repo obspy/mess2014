@@ -207,16 +207,14 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                     pass
                     #trace.append(np.load(filename_patterns[1] % i))
 
-            npts = spl[0].stats.npts
-            df = spl[0].stats.sampling_rate
-            T = np.arange(0, npts / df, 1 / df)
+            T = spl[0].times()
 
             for i in xrange(numslice):
                 slow_x = np.sin((baz[i]+180.)*np.pi/180.)*slow[i]
                 slow_y = np.cos((baz[i]+180.)*np.pi/180.)*slow[i]
                 st = UTCDateTime(t[i]) - starttime
                 if wlen <= 0:
-                    en = endtime
+                    en = T[-1]
                 else:
                     en = st + wlen
                 print UTCDateTime(t[i])
@@ -225,10 +223,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                 ax1 = fig.add_axes([0.1, 0.87, 0.7, 0.10])
                 if method == 'FK':
                     ax1.plot(T, spl[0].data, 'k')
-                    try:
-                        ax1.axvspan(st, en, facecolor='g', alpha=0.3)
-                    except IndexError:
-                        pass
+                    ax1.axvspan(st, en, facecolor='g', alpha=0.3)
                 else:
                     pass
                     #ax1.plot(T, trace[i], 'k')
