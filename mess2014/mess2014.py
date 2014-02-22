@@ -15,8 +15,80 @@ from obspy.taup import getTravelTimes
 import scipy.interpolate as spi
 import matplotlib.cm as cm
 
-
 KM_PER_DEG = 111.1949
+
+def array_transfer_helper(stream,inventory,sx=(-10,10),sy=(-10,10),sls=0.5,freqmin=0.1,
+        freqmax=4.0,numfreqs=10,coordsys='lonlat',correct3dplane=False, static3D=False,velcor=4.8):      
+    """
+    Array Response wrapper routine for MESS 2014:
+    :param stream: Waveforms for the array processing.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param inventory: Station metadata for waveforms
+    :type inventory: :class:`obspy.station.inventory.Inventory`
+    :param slx: Min/Max slowness for analysis in x direction.
+    :type slx: (float, float)
+    :param sly: Min/Max slowness for analysis in y direction.
+    :type sly: (float, float)
+    :param sls: step width of slowness grid
+    :type sls: float
+    :param frqmin: Low corner of frequency range for array analysis
+    :type frqmin: float
+    :param frqmax: High corner of frequency range for array analysis
+    :type frqmax: float
+    :param numfreqs: number of frequency values used for computing array transfer function
+    :type numfreqs: int
+    :param coordsys: defined coordingate system of stations (lonlat or km)
+    :type coordsys: string
+    :param correct_3dplane: correct for an inclined surface (not used)
+    :type correct_3dplane: bool
+    :param static_3D: correct topography 
+    :type static_3D: bool
+    :param velcor: velocity used for static_3D correction
+    :type velcor: float
+    """
+
+    for tr in stream:
+        for station in inventory[0].stations:
+            if tr.stats.station == station.code:
+                tr.stats.coordinates = \
+                       AttribDict(dict(latitude=station.latitude,
+                                  longitude=station.longitude,
+                                   elevation=station.elevation))
+                break
+
+    sllx,slmx = sx
+    slly,slmy = sx
+    sllx /= KM_PER_DEG
+    slmx /= KM_PER_DEG
+    slly /= KM_PER_DEG
+    slmy /= KM_PER_DEG
+    sls = sls/KM_PER_DEG
+
+    stepsfreq = (freqmax - freqmin) / float(numfreqs)
+    transff = AA.array_transff_freqslowness( stream, (sllx, slmx, slly, slmy), sls, 
+            freqmin, freqmax, stepsfreq, coordsys=coordsys, correct_3dplane=False, 
+            static_3D=static3D, vel_cor=velcor)
+
+    sllx *= KM_PER_DEG
+    slmx *= KM_PER_DEG
+    slly *= KM_PER_DEG
+    slmy *= KM_PER_DEG
+    sls *= KM_PER_DEG
+
+    slx = np.arange(sllx, slmx+sls, sls)
+    sly = np.arange(slly, slmy+sls, sls)
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+
+    #ax.pcolormesh(slx, sly, transff.T)
+    ax.contour(sly, slx, transff.T, 10)
+    ax.set_xlabel('slowness [s/deg]')
+    ax.set_ylabel('slowness [s/deg]')
+    ax.set_ylim(slx[0], slx[-1])
+    ax.set_xlim(sly[0], sly[-1])
+    plt.show()
+
+
 
 
 def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
@@ -31,7 +103,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :param inventory: Station metadata for waveforms
     :type inventory: :class:`obspy.station.inventory.Inventory`
     :param method: Method used for the array analysis
-        (one of "FK", "DLS", "PWS", "SWP").
+        (one of "FK": Frequnecy Wavenumber, "DLS": Delay and Sum, "PWS": Phase Weighted Stack, "SWP": Slowness Whitened Power).
     :type method: str
     :param filter: Whether to bandpass data to selected frequency range
     :type filter: bool
@@ -48,8 +120,8 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :param vel_corr: Correction velocity for static topography correction in
         km/s.
     :type vel_corr: float
-    :param wlen: sliding window for analysis in seconds, use -1 to use the
-        whole trace without windowing.
+    :param wlen: sliding window for analysis in seconds, use -1 to use the whole
+        trace without windowing.
     :type wlen: float
     :param slx: Min/Max slowness for analysis in x direction.
     :type slx: (float, float)
@@ -61,7 +133,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :type array_response: bool
     """
 
-    if method not in ("FK", "DLS", "PWS", "SWP"):
+    if method not in ("FK","DLS", "PWS", "SWP"):
         raise ValueError("Invalid method: ''" % method)
 
     sllx, slmx = slx
@@ -87,6 +159,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                       zerophase=True)
 
     print stream
+    spl = stream.copy()
 
     tmpdir = tempfile.mkdtemp(prefix="obspy-")
     filename_patterns = (os.path.join(tmpdir, 'pow_map_%03d.npy'),
@@ -99,207 +172,209 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     try:
         # next step would be needed if the correction velocity needs to be
         # estimated
-        # XXX
-        velgrid = np.arange(4.8, 4.9, 0.2)
-        velgrid = np.array([vel_corr])
-        for vc in velgrid:
-            print vc
-            sllx /= KM_PER_DEG
-            slmx /= KM_PER_DEG
-            slly /= KM_PER_DEG
-            slmy /= KM_PER_DEG
-            sls /= KM_PER_DEG
+        # 
+        sllx /= KM_PER_DEG
+        slmx /= KM_PER_DEG
+        slly /= KM_PER_DEG
+        slmy /= KM_PER_DEG
+        sls /= KM_PER_DEG
+        vc = vel_corr
+        if method == 'FK':
+            kwargs = dict(
+                #slowness grid: X min, X max, Y min, Y max, Slow Step
+                sll_x=sllx, slm_x=slmx, sll_y=slly, slm_y=slmy, sl_s=sls,
+                # sliding window properties
+                win_len=wlen, win_frac=0.8,
+                # frequency properties
+                frqlow=frqlow, frqhigh=frqhigh, prewhiten=0,
+                # restrict output
+                store=dump,
+                semb_thres=-1e9, vel_thres=-1e9, verbose=False,
+                timestamp='julsec', stime=starttime, etime=endtime,
+                method=0, correct_3dplane=False, vel_cor=vc,
+                static_3D=static3D)
+
+            # here we do the array processing
             start = UTCDateTime()
-            if method == 'FK':
-                kwargs = dict(
-                    #slowness grid: X min, X max, Y min, Y max, Slow Step
-                    sll_x=sllx, slm_x=slmx, sll_y=slly, slm_y=slmy, sl_s=sls,
-                    # sliding window properties
-                    win_len=wlen, win_frac=0.8,
-                    # frequency properties
-                    frqlow=frqlow, frqhigh=frqhigh, prewhiten=0,
-                    # restrict output
-                    store=dump,
-                    semb_thres=-1e9, vel_thres=-1e9, verbose=False,
-                    timestamp='julsec', stime=starttime, etime=endtime,
-                    method=0, correct_3dplane=False, vel_cor=vc,
-                    static_3D=static3D)
-
-                # here we do the array processing
-                out = AA.array_processing(stream, **kwargs)
-                # make output human readable, adjust backazimuth to values
-                # between 0 and 360
-                t, rel_power, abs_power, baz, slow = out.T
-
-            else:
-                kwargs = dict(
-                    # slowness grid: X min, X max, Y min, Y max, Slow Step
-                    sll_x=sllx, slm_x=slmx, sll_y=slly, slm_y=slmy, sl_s=sls,
-                    # sliding window properties
-                    # frequency properties
-                    frqlow=frqlow, frqhigh=frqhigh,
-                    # restrict output
-                    store=dump,
-                    win_len=wlen, win_frac=0.5,
-                    nthroot=4, method=method,
-                    verbose=False, timestamp='julsec',
-                    stime=starttime, etime=endtime, vel_cor=vc,
-                    static_3D=static3D)
-
-                # here we do the array processing
-                out = AA.beamforming(stream, **kwargs)
-                # make output human readable, adjust backazimuth to values
-                # between 0 and 360
-                t, rel_power, baz, slow_x, slow_y, slow = out.T
-
+            out = AA.array_processing(stream, **kwargs)
             print "Total time in routine: %f\n" % (UTCDateTime() - start)
 
-            # calculating array response
-            if array_response:
-                stepsfreq = (frqhigh - frqlow) / 10.
-                tf_slx = sllx
-                tf_smx = slmx
-                tf_sly = slly
-                tf_smy = slmy
-                transff = AA.array_transff_freqslowness(
-                    stream, (tf_slx, tf_smx, tf_sly, tf_smy), sls, frqlow,
-                    frqhigh, stepsfreq, coordsys='lonlat',
-                    correct_3dplane=False, static_3D=static3D, vel_cor=vc)
+            # make output human readable, adjust backazimuth to values
+            # between 0 and 360
+            t, rel_power, abs_power, baz, slow = out.T
 
-            # now let's do the plotting
-            cmap = cm.rainbow
+        else:
+            kwargs = dict(
+                # slowness grid: X min, X max, Y min, Y max, Slow Step
+                sll_x=sllx, slm_x=slmx, sll_y=slly, slm_y=slmy, sl_s=sls,
+                # sliding window properties
+                # frequency properties
+                frqlow=frqlow, frqhigh=frqhigh,
+                # restrict output
+                store=dump,
+                win_len=wlen, win_frac=0.5,
+                nthroot=4, method=method,
+                verbose=False, timestamp='julsec',
+                stime=starttime, etime=endtime, vel_cor=vc,
+                static_3D=False)
 
-            #
-            # we will plot everything in s/deg
-            slow *= KM_PER_DEG
-            sllx *= KM_PER_DEG
-            slmx *= KM_PER_DEG
-            slly *= KM_PER_DEG
-            slmy *= KM_PER_DEG
-            sls *= KM_PER_DEG
+            # here we do the array processing
+            start = UTCDateTime()
+            out = AA.beamforming(stream, **kwargs)
+            print "Total time in routine: %f\n" % (UTCDateTime() - start)
 
-            if method == 'FK':
-                spl = stream.copy()
-                spl.trim(starttime, endtime)
-            else:
-                if wlen <= 0.:
-                    spl = stream.copy()
-                    #spl[0].data = max_beam[0]
-                    spl.trim(starttime, endtime)
-
-            numslice = len(t)
-            powmap = []
+            # make output human readable, adjust backazimuth to values
+            # between 0 and 360
             trace = []
-            slx = np.arange(sllx-sls, slmx, sls)
-            sly = np.arange(slly-sls, slmy, sls)
+            t, rel_power, baz, slow_x, slow_y, slow = out.T
+
+            # calculating array response
+        if array_response:
+            stepsfreq = (frqhigh - frqlow) / 10.
+            tf_slx = sllx
+            tf_smx = slmx
+            tf_sly = slly
+            tf_smy = slmy
+            transff = AA.array_transff_freqslowness(
+                stream, (tf_slx, tf_smx, tf_sly, tf_smy), sls, frqlow,
+                frqhigh, stepsfreq, coordsys='lonlat',
+                correct_3dplane=False, static_3D=False, vel_cor=vc)
+
+        # now let's do the plotting
+        cmap = cm.rainbow
+
+        #
+        # we will plot everything in s/deg
+        slow *= KM_PER_DEG
+        sllx *= KM_PER_DEG
+        slmx *= KM_PER_DEG
+        slly *= KM_PER_DEG
+        slmy *= KM_PER_DEG
+        sls *= KM_PER_DEG
+
+        numslice = len(t)
+        powmap = []
+        slx = np.arange(sllx-sls, slmx, sls)
+        sly = np.arange(slly-sls, slmy, sls)
+        if baz_plot:
+            maxslowg = np.sqrt(slmx*slmx + slmy*slmy)
+            bzs = np.arctan2(sls, np.sqrt(slmx*slmx + slmy*slmy))*180/np.pi
+            xi = np.arange(0., maxslowg, sls)
+            yi = np.arange(-180., 180., bzs)
+            grid_x, grid_y = np.meshgrid(xi, yi)
+        # reading in the rel-power maps
+        for i in xrange(numslice):
+            powmap.append(np.load(filename_patterns[0] % i))
+            if method != 'FK':
+                trace.append(np.load(filename_patterns[1] % i))
+
+        npts = stream[0].stats.npts
+        df = stream[0].stats.sampling_rate
+        T = np.arange(0, npts / df, 1 / df)
+
+        # if we choose windowlen > 0. we now move through our slices
+        for i in xrange(numslice):
+            slow_x = np.sin((baz[i]+180.)*np.pi/180.)*slow[i]
+            slow_y = np.cos((baz[i]+180.)*np.pi/180.)*slow[i]
+            st = UTCDateTime(t[i]) - starttime
+            if wlen <= 0:
+                en = endtime
+            else:
+                en = st + wlen
+            print UTCDateTime(t[i])
+            # add polar and colorbar axes
+            fig = plt.figure(figsize=(8, 8))
+            ax1 = fig.add_axes([0.1, 0.87, 0.7, 0.10])
+            # here we plot the first trace on top of the slowness map 
+            # and indicate the possibiton of the lsiding window as green box
+            if method == 'FK':
+                ax1.plot(T, spl[0].data, 'k')
+                if wlen > 0.: 
+                    try:
+                        ax1.axvspan(st, en, facecolor='g', alpha=0.3)
+                    except IndexError:
+                        pass
+            else:
+                T = np.arange(0, len(trace[i])/df, 1 / df)
+                ax1.plot(T, trace[i], 'k')
+
+            ax1.yaxis.set_major_locator(MaxNLocator(3))
+
+            ax = fig.add_axes([0.10, 0.1, 0.70, 0.7])
+            
+            # if we have chosen the baz_plot option a re-griding 
+            # of the sx,sy slowness map is needed
             if baz_plot:
-                maxslowg = np.sqrt(slmx*slmx + slmy*slmy)
-                bzs = np.arctan2(sls, np.sqrt(slmx*slmx + slmy*slmy))*180/np.pi
-                xi = np.arange(0., maxslowg, sls)
-                yi = np.arange(-180., 180., bzs)
-                grid_x, grid_y = np.meshgrid(xi, yi)
+                slowgrid = []
+                transgrid = []
+                pow = np.asarray(powmap[i])
+                for ix, sx in enumerate(slx):
+                    for iy, sy in enumerate(sly):
+                        bbaz = np.arctan2(sx, sy)*180/np.pi+180.
+                        if bbaz > 180.:
+                            bbaz = -180. + (bbaz-180.)
+                        slowgrid.append((np.sqrt(sx*sx+sy*sy), bbaz,
+                                         pow[ix, iy]))
+                        if array_response:
+                            tslow = (np.sqrt((sx+slow_x) *
+                                     (sx+slow_x)+(sy+slow_y) *
+                                     (sy+slow_y)))
+                            tbaz = (np.arctan2(sx+slow_x, sy+slow_y) *
+                                    180 / np.pi + 180.)
+                            if tbaz > 180.:
+                                tbaz = -180. + (tbaz-180.)
+                            transgrid.append((tslow, tbaz,
+                                              transff[ix, iy]))
 
-            for i in xrange(numslice):
-                powmap.append(np.load(filename_patterns[0] % i))
-                if method != 'FK':
-                    trace.append(np.load(filename_patterns[1] % i))
+                slowgrid = np.asarray(slowgrid)
+                sl = slowgrid[:, 0]
+                bz = slowgrid[:, 1]
+                slowg = slowgrid[:, 2]
+                grid = spi.griddata((sl, bz), slowg, (grid_x, grid_y),
+                                    method='nearest')
+                ax.pcolormesh(xi, yi, grid, cmap=cmap)
 
-            T = spl[0].times()
+                if array_response:
+                    level = np.arange(0.1, 0.5, 0.1)
+                    transgrid = np.asarray(transgrid)
+                    tsl = transgrid[:, 0]
+                    tbz = transgrid[:, 1]
+                    transg = transgrid[:, 2]
+                    trans = spi.griddata((tsl, tbz), transg,
+                                         (grid_x, grid_y),
+                                         method='nearest')
+                    ax.contour(xi, yi, trans, level, colors='k',
+                               linewidth=0.2)
 
-            for i in xrange(numslice):
-                slow_x = np.sin((baz[i]+180.)*np.pi/180.)*slow[i]
-                slow_y = np.cos((baz[i]+180.)*np.pi/180.)*slow[i]
-                st = UTCDateTime(t[i]) - starttime
-                if wlen <= 0:
-                    en = T[-1]
-                else:
-                    en = st + wlen
-                print UTCDateTime(t[i])
-                # add polar and colorbar axes
-                fig = plt.figure(figsize=(8, 8))
-                ax1 = fig.add_axes([0.1, 0.87, 0.7, 0.10])
-                if method == 'FK':
-                    ax1.plot(T, spl[0].data, 'k')
-                    ax1.axvspan(st, en, facecolor='g', alpha=0.3)
-                else:
-                    ax1.plot(T, trace[i], 'k')
+                ax.set_xlabel('slowness [s/deg]')
+                ax.set_ylabel('backazimuth [deg]')
+                ax.set_xlim(xi[0], xi[-1])
+                ax.set_ylim(yi[0], yi[-1])
+            else:
+                ax.set_xlabel('slowness [s/deg]')
+                ax.set_ylabel('slowness [s/deg]')
+                slow_x = np.cos((baz[i]+180.)*np.pi/180.)*slow[i]
+                slow_y = np.sin((baz[i]+180.)*np.pi/180.)*slow[i]
+                ax.pcolormesh(slx, sly, powmap[i].T)
+                ax.arrow(0, 0, slow_y, slow_x, head_width=0.005,
+                         head_length=0.01, fc='k', ec='k')
+                if array_response:
+                    tslx = np.arange(sllx+slow_x, slmx+slow_x+sls, sls)
+                    tsly = np.arange(slly+slow_y, slmy+slow_y+sls, sls)
+                    try:
+                        ax.contour(tsly, tslx, transff.T, 5, colors='k',
+                                   linewidth=0.5)
+                    except:
+                        pass
+                ax.set_ylim(slx[0], slx[-1])
+                ax.set_xlim(sly[0], sly[-1])
+            new_time = t[i]
 
-                ax1.yaxis.set_major_locator(MaxNLocator(3))
-                l, u = ax1.get_ylim()
+            result = "BAZ: %.2f, Slow: %.2f s/deg, Time %s" % (
+                baz[i], slow[i], UTCDateTime(new_time))
+            ax.set_title(result)
 
-                ax = fig.add_axes([0.10, 0.1, 0.70, 0.7])
-
-                if baz_plot:
-                    slowgrid = []
-                    transgrid = []
-                    pow = np.asarray(powmap[i])
-                    for ix, sx in enumerate(slx):
-                        for iy, sy in enumerate(sly):
-                            bbaz = np.arctan2(sx, sy)*180/np.pi+180.
-                            if bbaz > 180.:
-                                bbaz = -180. + (bbaz-180.)
-                            slowgrid.append((np.sqrt(sx*sx+sy*sy), bbaz,
-                                             pow[ix, iy]))
-                            if array_response:
-                                tslow = (np.sqrt((sx+slow_x) *
-                                         (sx+slow_x)+(sy+slow_y) *
-                                         (sy+slow_y)))
-                                tbaz = (np.arctan2(sx+slow_x, sy+slow_y) *
-                                        180 / np.pi + 180.)
-                                if tbaz > 180.:
-                                    tbaz = -180. + (tbaz-180.)
-                                transgrid.append((tslow, tbaz,
-                                                  transff[ix, iy]))
-
-                    slowgrid = np.asarray(slowgrid)
-                    sl = slowgrid[:, 0]
-                    bz = slowgrid[:, 1]
-                    slowg = slowgrid[:, 2]
-                    grid = spi.griddata((sl, bz), slowg, (grid_x, grid_y),
-                                        method='nearest')
-                    ax.pcolormesh(xi, yi, grid, cmap=cmap)
-
-                    if array_response:
-                        level = np.arange(0.1, 0.5, 0.1)
-                        transgrid = np.asarray(transgrid)
-                        tsl = transgrid[:, 0]
-                        tbz = transgrid[:, 1]
-                        transg = transgrid[:, 2]
-                        trans = spi.griddata((tsl, tbz), transg,
-                                             (grid_x, grid_y),
-                                             method='nearest')
-                        ax.contour(xi, yi, trans, level, colors='k',
-                                   linewidth=0.2)
-
-                    ax.set_xlabel('slowness [s/deg]')
-                    ax.set_ylabel('backazimuth [deg]')
-                    ax.set_xlim(xi[0], xi[-1])
-                    ax.set_ylim(yi[0], yi[-1])
-                else:
-                    ax.set_xlabel('slowness [s/deg]')
-                    ax.set_ylabel('slowness [s/deg]')
-                    slow_x = np.cos((baz[i]+180.)*np.pi/180.)*slow[i]
-                    slow_y = np.sin((baz[i]+180.)*np.pi/180.)*slow[i]
-                    ax.pcolormesh(slx, sly, powmap[i].T)
-                    ax.arrow(0, 0, slow_y, slow_x, head_width=0.005,
-                             head_length=0.01, fc='k', ec='k')
-                    if array_response:
-                        tslx = np.arange(sllx+slow_x, slmx+slow_x+sls, sls)
-                        tsly = np.arange(slly+slow_y, slmy+slow_y+sls, sls)
-                        try:
-                            ax.contour(tsly, tslx, transff.T, 5, colors='k',
-                                       linewidth=0.5)
-                        except:
-                            pass
-                    ax.set_ylim(slx[0], slx[-1])
-                    ax.set_xlim(sly[0], sly[-1])
-                new_time = t[i]
-
-                result = "BAZ: %.2f, Slow: %.2f s/deg, Time %s" % (
-                    baz[i], slow[i], UTCDateTime(new_time))
-                ax.set_title(result)
-
-                plt.show()
+            plt.show()
     finally:
         shutil.rmtree(tmpdir)
 
@@ -340,7 +415,20 @@ def attach_coordinates_to_traces(stream, inventory, event=None):
 def show_distance_plot(stream, event, inventory, starttime, endtime,
                        plot_travel_times=True):
     """
-    Plots distance dependent waveforms.
+    Plots distance dependent seismogramm sections.
+    :param stream: Waveforms for the array processing.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param event: earthquake position (lat/lon/depth) to which distance is calculated
+    :type event:
+    :param inventory: Station metadata for waveforms
+    :type inventory: :class:`obspy.station.inventory.Inventory`
+    :param starttime: starttime of traces to be plotted
+    :type starttime: UTCDateTime
+    :param endttime: endttime of traces to be plotted
+    :type endttime: UTCDateTime
+    :param plot_travel_times: flag wether phases are marked as traveltime plots in the section 
+                              obspy.taup is used to calculate the phases
+    :type: bool
     """
     stream = stream.slice(starttime=starttime, endtime=endtime).copy()
     event_depth_in_km = event.origins[0].depth / 1000.0
@@ -420,16 +508,7 @@ def show_distance_plot(stream, event, inventory, starttime, endtime,
     plt.show()
 
 
-def align_phases(stream, event, inventory, phase_name, method="simple"):
-    """
-    Method either 'simple' or 'fft'. Simple will just shift the starttime of
-    Trace, while 'fft' will do the shift in the frequency domain.
-    """
-    method = method.lower()
-    if method not in ['simple', 'fft']:
-        msg = "method must be 'simple' or 'fft'"
-        raise ValueError(msg)
-
+def align_phases(stream, event, inventory, phase_name):
     stream = stream.copy()
     attach_coordinates_to_traces(stream, inventory, event)
 
@@ -437,7 +516,6 @@ def align_phases(stream, event, inventory, phase_name, method="simple"):
 
     tr_1 = stream[-1]
     tt_1 = getTravelTimes(tr_1.stats.distance, event.origins[0].depth / 1000.0, "ak135")
-
     for tt in tt_1:
         if tt["phase_name"] != phase_name:
             continue
@@ -451,16 +529,51 @@ def align_phases(stream, event, inventory, phase_name, method="simple"):
                 continue
             tt = t["time"]
             break
-        if method == "simple":
-            tr.stats.starttime -= (tt - tt_1)
-        else:
-            AA.shifttrace_freq(Stream(traces=[tr]), [- ((tt - tt_1))])
+        tr.stats.starttime -= (tt - tt_1)
+
     return stream
 
 
 def vespagram(stream, ev, inv, method, frqlow, frqhigh, baz, scale, nthroot=4,
               filter=True, static3D=False, vel_corr=4.8, sl=(0.0, 10.0, 0.5),
               align=False, align_phase=['P', 'Pdiff'], plot_trace=True):
+    """
+    vespagram wrapper routine for MESS 2014.
+
+    :param stream: Waveforms for the array processing.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param inventory: Station metadata for waveforms
+    :type inventory: :class:`obspy.station.inventory.Inventory`
+    :param method: Method used for the array analysis
+        (one of "DLS": Delay and Sum, "PWS": Phase Weighted Stack).
+    :type method: str
+    :param frqlow: Low corner of frequency range for array analysis
+    :type frqlow: float
+    :param frqhigh: High corner of frequency range for array analysis
+    :type frqhigh: float
+    :param baz: pre-defined (theoretical or calculated) backazimuth used for calculation
+    :type baz_plot: float
+    :param scale: scale for plotting
+    :type scale: float
+    :param nthroot: estimating the nthroot for calculation of the beam
+    :type nthroot: int
+    :param filter: Whether to bandpass data to selected frequency range
+    :type filter: bool
+    :param static3D: static correction of topography using `vel_corr` as
+        velocity (slow!)
+    :type static3D: bool
+    :param vel_corr: Correction velocity for static topography correction in
+        km/s.
+    :type vel_corr: float
+    :param sl: Min/Max and stepwidthslowness for analysis 
+    :type sl: (float, float,float)
+    :param align: whether to align the vespagram to a certain phase
+    :type align: bool
+    :param align_phase: phase to be aligned with (might be a list if simulateneous arivials are expected (P,PcP,Pdif)
+    :type align: str
+    :param plot_trace: if True plot the vespagram as wiggle plot, if False as density map
+    :type align: bool
+    """
 
     starttime = max([tr.stats.starttime for tr in stream])
     endtime = min([tr.stats.endtime for tr in stream])
