@@ -17,8 +17,11 @@ import matplotlib.cm as cm
 
 KM_PER_DEG = 111.1949
 
-def array_transfer_helper(stream,inventory,sx=(-10,10),sy=(-10,10),sls=0.5,freqmin=0.1,
-        freqmax=4.0,numfreqs=10,coordsys='lonlat',correct3dplane=False, static3D=False,velcor=4.8):      
+
+def array_transfer_helper(stream, inventory, sx=(-10, 10), sy=(-10, 10),
+                          sls=0.5, freqmin=0.1, freqmax=4.0, numfreqs=10,
+                          coordsys='lonlat', correct3dplane=False,
+                          static3D=False, velcor=4.8):
     """
     Array Response wrapper routine for MESS 2014:
     :param stream: Waveforms for the array processing.
@@ -35,13 +38,14 @@ def array_transfer_helper(stream,inventory,sx=(-10,10),sy=(-10,10),sls=0.5,freqm
     :type frqmin: float
     :param frqmax: High corner of frequency range for array analysis
     :type frqmax: float
-    :param numfreqs: number of frequency values used for computing array transfer function
+    :param numfreqs: number of frequency values used for computing array
+        transfer function
     :type numfreqs: int
     :param coordsys: defined coordingate system of stations (lonlat or km)
     :type coordsys: string
     :param correct_3dplane: correct for an inclined surface (not used)
     :type correct_3dplane: bool
-    :param static_3D: correct topography 
+    :param static_3D: correct topography
     :type static_3D: bool
     :param velcor: velocity used for static_3D correction
     :type velcor: float
@@ -51,13 +55,13 @@ def array_transfer_helper(stream,inventory,sx=(-10,10),sy=(-10,10),sls=0.5,freqm
         for station in inventory[0].stations:
             if tr.stats.station == station.code:
                 tr.stats.coordinates = \
-                       AttribDict(dict(latitude=station.latitude,
-                                  longitude=station.longitude,
-                                   elevation=station.elevation))
+                    AttribDict(dict(latitude=station.latitude,
+                               longitude=station.longitude,
+                               elevation=station.elevation))
                 break
 
-    sllx,slmx = sx
-    slly,slmy = sx
+    sllx, slmx = sx
+    slly, slmy = sx
     sllx /= KM_PER_DEG
     slmx /= KM_PER_DEG
     slly /= KM_PER_DEG
@@ -65,9 +69,10 @@ def array_transfer_helper(stream,inventory,sx=(-10,10),sy=(-10,10),sls=0.5,freqm
     sls = sls/KM_PER_DEG
 
     stepsfreq = (freqmax - freqmin) / float(numfreqs)
-    transff = AA.array_transff_freqslowness( stream, (sllx, slmx, slly, slmy), sls, 
-            freqmin, freqmax, stepsfreq, coordsys=coordsys, correct_3dplane=False, 
-            static_3D=static3D, vel_cor=velcor)
+    transff = AA.array_transff_freqslowness(
+        stream, (sllx, slmx, slly, slmy), sls, freqmin, freqmax, stepsfreq,
+        coordsys=coordsys, correct_3dplane=False, static_3D=static3D,
+        vel_cor=velcor)
 
     sllx *= KM_PER_DEG
     slmx *= KM_PER_DEG
@@ -89,8 +94,6 @@ def array_transfer_helper(stream,inventory,sx=(-10,10),sy=(-10,10),sls=0.5,freqm
     plt.show()
 
 
-
-
 def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                           filter=True, baz_plot=True, static3D=False,
                           vel_corr=4.8, wlen=-1, slx=(-10, 10),
@@ -103,7 +106,8 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :param inventory: Station metadata for waveforms
     :type inventory: :class:`obspy.station.inventory.Inventory`
     :param method: Method used for the array analysis
-        (one of "FK": Frequnecy Wavenumber, "DLS": Delay and Sum, "PWS": Phase Weighted Stack, "SWP": Slowness Whitened Power).
+        (one of "FK": Frequnecy Wavenumber, "DLS": Delay and Sum,
+        "PWS": Phase Weighted Stack, "SWP": Slowness Whitened Power).
     :type method: str
     :param filter: Whether to bandpass data to selected frequency range
     :type filter: bool
@@ -120,8 +124,8 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :param vel_corr: Correction velocity for static topography correction in
         km/s.
     :type vel_corr: float
-    :param wlen: sliding window for analysis in seconds, use -1 to use the whole
-        trace without windowing.
+    :param wlen: sliding window for analysis in seconds, use -1 to use the
+        whole trace without windowing.
     :type wlen: float
     :param slx: Min/Max slowness for analysis in x direction.
     :type slx: (float, float)
@@ -133,7 +137,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :type array_response: bool
     """
 
-    if method not in ("FK","DLS", "PWS", "SWP"):
+    if method not in ("FK", "DLS", "PWS", "SWP"):
         raise ValueError("Invalid method: ''" % method)
 
     sllx, slmx = slx
@@ -301,8 +305,8 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
             ax1.yaxis.set_major_locator(MaxNLocator(3))
 
             ax = fig.add_axes([0.10, 0.1, 0.70, 0.7])
-            
-            # if we have chosen the baz_plot option a re-griding 
+
+            # if we have chosen the baz_plot option a re-griding
             # of the sx,sy slowness map is needed
             if baz_plot:
                 slowgrid = []
