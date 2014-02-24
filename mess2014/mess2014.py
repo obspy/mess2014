@@ -82,7 +82,7 @@ def array_transfer_helper(stream, inventory, sx=(-10, 10), sy=(-10, 10),
 
     slx = np.arange(sllx, slmx+sls, sls)
     sly = np.arange(slly, slmy+sls, sls)
-    fig = plt.figure(figsize=(8, 8))
+    fig = plt.figure(figsize=(12, 12))
     ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 
     #ax.pcolormesh(slx, sly, transff.T)
@@ -287,7 +287,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
                 en = st + wlen
             print UTCDateTime(t[i])
             # add polar and colorbar axes
-            fig = plt.figure(figsize=(8, 8))
+            fig = plt.figure(figsize=(12, 12))
             ax1 = fig.add_axes([0.1, 0.87, 0.7, 0.10])
             # here we plot the first trace on top of the slowness map 
             # and indicate the possibiton of the lsiding window as green box
@@ -462,7 +462,7 @@ def show_distance_plot(stream, event, inventory, starttime, endtime,
         tr.data *= stream_range
         tr.data += tr.stats.distance
 
-    plt.figure(figsize=(20, 12))
+    plt.figure(figsize=(18, 10))
     for _i, tr in enumerate(stream):
         plt.plot(times_array, tr.data, label="%s.%s" % (tr.stats.network,
                  tr.stats.station), color=colors[_i])
@@ -695,7 +695,7 @@ def vespagram(stream, ev, inv, method, frqlow, frqhigh, baz, scale, nthroot=4,
     #min_amp = np.min(beams[:, :])
     scale *= sls
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(12, 8))
 
     if plot_trace:
         ax1 = fig.add_axes([0.1, 0.1, 0.85, 0.85])
