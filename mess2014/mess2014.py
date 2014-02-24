@@ -23,7 +23,8 @@ def array_transfer_helper(stream, inventory, sx=(-10, 10), sy=(-10, 10),
                           coordsys='lonlat', correct3dplane=False,
                           static3D=False, velcor=4.8):
     """
-    Array Response wrapper routine for MESS 2014:
+    Array Response wrapper routine for MESS 2014.
+
     :param stream: Waveforms for the array processing.
     :type stream: :class:`obspy.core.stream.Stream`
     :param inventory: Station metadata for waveforms
@@ -39,7 +40,7 @@ def array_transfer_helper(stream, inventory, sx=(-10, 10), sy=(-10, 10),
     :param frqmax: High corner of frequency range for array analysis
     :type frqmax: float
     :param numfreqs: number of frequency values used for computing array
-        transfer function
+     transfer function
     :type numfreqs: int
     :param coordsys: defined coordingate system of stations (lonlat or km)
     :type coordsys: string
@@ -106,8 +107,8 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :param inventory: Station metadata for waveforms
     :type inventory: :class:`obspy.station.inventory.Inventory`
     :param method: Method used for the array analysis
-        (one of "FK": Frequnecy Wavenumber, "DLS": Delay and Sum,
-        "PWS": Phase Weighted Stack, "SWP": Slowness Whitened Power).
+     (one of "FK": Frequnecy Wavenumber, "DLS": Delay and Sum,
+     "PWS": Phase Weighted Stack, "SWP": Slowness Whitened Power).
     :type method: str
     :param filter: Whether to bandpass data to selected frequency range
     :type filter: bool
@@ -116,16 +117,16 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     :param frqhigh: High corner of frequency range for array analysis
     :type frqhigh: float
     :param baz_plot: Whether to show backazimuth-slowness map (True) or
-        slowness x-y map (False).
+     slowness x-y map (False).
     :type baz_plot: str
     :param static3D: static correction of topography using `vel_corr` as
-        velocity (slow!)
+     velocity (slow!)
     :type static3D: bool
     :param vel_corr: Correction velocity for static topography correction in
-        km/s.
+     km/s.
     :type vel_corr: float
     :param wlen: sliding window for analysis in seconds, use -1 to use the
-        whole trace without windowing.
+     whole trace without windowing.
     :type wlen: float
     :param slx: Min/Max slowness for analysis in x direction.
     :type slx: (float, float)
@@ -176,7 +177,7 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
     try:
         # next step would be needed if the correction velocity needs to be
         # estimated
-        # 
+        #
         sllx /= KM_PER_DEG
         slmx /= KM_PER_DEG
         slly /= KM_PER_DEG
@@ -289,11 +290,11 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
             # add polar and colorbar axes
             fig = plt.figure(figsize=(12, 12))
             ax1 = fig.add_axes([0.1, 0.87, 0.7, 0.10])
-            # here we plot the first trace on top of the slowness map 
+            # here we plot the first trace on top of the slowness map
             # and indicate the possibiton of the lsiding window as green box
             if method == 'FK':
                 ax1.plot(T, spl[0].data, 'k')
-                if wlen > 0.: 
+                if wlen > 0.:
                     try:
                         ax1.axvspan(st, en, facecolor='g', alpha=0.3)
                     except IndexError:
@@ -385,7 +386,19 @@ def array_analysis_helper(stream, inventory, method, frqlow, frqhigh,
 
 def attach_coordinates_to_traces(stream, inventory, event=None):
     """
-    If event is given, the event distance in degree will also be attached.
+    Function to add coordinates to traces.
+
+    It extracts coordinates from a :class:`obspy.station.inventory.Inventory`
+    object and writes them to each trace's stats attribute. If an event is
+    given, the distance in degree will also be attached.
+
+    :param stream: Waveforms for the array processing.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param inventory: Station metadata for waveforms
+    :type inventory: :class:`obspy.station.inventory.Inventory`
+    :param event: If the event is given, the event distance in degree will also
+     be attached to the traces.
+    :type event: :class:`obspy.core.event.Event`
     """
     # Get the coordinates for all stations
     coords = {}
@@ -420,19 +433,20 @@ def show_distance_plot(stream, event, inventory, starttime, endtime,
                        plot_travel_times=True):
     """
     Plots distance dependent seismogramm sections.
-    :param stream: Waveforms for the array processing.
+
+    :param stream: The waveforms.
     :type stream: :class:`obspy.core.stream.Stream`
-    :param event: earthquake position (lat/lon/depth) to which distance is calculated
-    :type event:
-    :param inventory: Station metadata for waveforms
+    :param event: The event.
+    :type event: :class:`obspy.core.event.Event`
+    :param inventory: The station information.
     :type inventory: :class:`obspy.station.inventory.Inventory`
     :param starttime: starttime of traces to be plotted
     :type starttime: UTCDateTime
     :param endttime: endttime of traces to be plotted
     :type endttime: UTCDateTime
-    :param plot_travel_times: flag wether phases are marked as traveltime plots in the section 
-                              obspy.taup is used to calculate the phases
-    :type: bool
+    :param plot_travel_times: flag whether phases are marked as traveltime plots
+     in the section obspy.taup is used to calculate the phases
+    :type pot_travel_times: bool
     """
     stream = stream.slice(starttime=starttime, endtime=endtime).copy()
     event_depth_in_km = event.origins[0].depth / 1000.0
@@ -512,14 +526,40 @@ def show_distance_plot(stream, event, inventory, starttime, endtime,
     plt.show()
 
 
-def align_phases(stream, event, inventory, phase_name):
+def align_phases(stream, event, inventory, phase_name, method="simple"):
+    """
+    Aligns the waveforms with the theoretical travel times for some phase. The
+    theoretical travel times are calculated with obspy.taup.
+
+    :param stream: Waveforms for the array processing.
+    :type stream: :class:`obspy.core.stream.Stream`
+    :param event: The event for which to calculate phases.
+    :type event: :class:`obspy.core.event.Event`
+    :param inventory: Station metadata.
+    :type inventory: :class:`obspy.station.inventory.Inventory`
+    :param phase_name: The name of the phase you want to align. Must be
+        contained in all traces. Otherwise the behaviour is undefined.
+    :type phase_name: str
+    :param method: Method is either `simple` or `fft`. Simple will just shift
+     the starttime of Trace, while 'fft' will do the shift in the frequency
+     domain. Defaults to `simple`.
+    :type method: str
+    """
+    method = method.lower()
+    if method not in ['simple', 'fft']:
+        msg = "method must be 'simple' or 'fft'"
+        raise ValueError(msg)
+
     stream = stream.copy()
     attach_coordinates_to_traces(stream, inventory, event)
 
     stream.traces = sorted(stream.traces, key=lambda x: x.stats.distance)[::-1]
 
     tr_1 = stream[-1]
-    tt_1 = getTravelTimes(tr_1.stats.distance, event.origins[0].depth / 1000.0, "ak135")
+    tt_1 = getTravelTimes(tr_1.stats.distance,
+                          event.origins[0].depth / 1000.0,
+                          "ak135")
+
     for tt in tt_1:
         if tt["phase_name"] != phase_name:
             continue
@@ -527,14 +567,18 @@ def align_phases(stream, event, inventory, phase_name):
         break
 
     for tr in stream:
-        tt = getTravelTimes(tr.stats.distance, event.origins[0].depth / 1000.0, "ak135")
+        tt = getTravelTimes(tr.stats.distance,
+                            event.origins[0].depth / 1000.0,
+                            "ak135")
         for t in tt:
             if t["phase_name"] != phase_name:
                 continue
             tt = t["time"]
             break
-        tr.stats.starttime -= (tt - tt_1)
-
+        if method == "simple":
+            tr.stats.starttime -= (tt - tt_1)
+        else:
+            AA.shifttrace_freq(Stream(traces=[tr]), [- ((tt - tt_1))])
     return stream
 
 
@@ -569,7 +613,7 @@ def vespagram(stream, ev, inv, method, frqlow, frqhigh, baz, scale, nthroot=4,
     :param vel_corr: Correction velocity for static topography correction in
         km/s.
     :type vel_corr: float
-    :param sl: Min/Max and stepwidthslowness for analysis 
+    :param sl: Min/Max and stepwidthslowness for analysis
     :type sl: (float, float,float)
     :param align: whether to align the vespagram to a certain phase
     :type align: bool
