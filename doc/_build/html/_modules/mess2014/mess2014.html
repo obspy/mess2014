@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mess2014.mess2014 &mdash; MESS 2014 Workshop 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/bootswatch-3.0.0/united/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/bootstrap-sphinx.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="../../_static/js/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="../../_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="../../_static/bootstrap-3.0.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="../../_static/bootstrap-sphinx.js"></script>
+    <link rel="top" title="MESS 2014 Workshop 0.1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../index.html">
+          MESS 2014 Workshop</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            <li class="divider-vertical"></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a href="../../index.html"
+     class="dropdown-toggle"
+     data-toggle="dropdown">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+    ></ul>
+</li>
+              
+                <li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"></ul>
+</li>
+              
+            
+            
+              
+            
+            
+            
+            
+              <li class="hidden-sm"></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      
+  <h1>Source code for mess2014.mess2014</h1><div class="highlight"><pre>
+<span class="c">#!/usr/bin/env python</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">from</span> <span class="nn">matplotlib.ticker</span> <span class="kn">import</span> <span class="n">MaxNLocator</span>
+<span class="kn">from</span> <span class="nn">obspy</span> <span class="kn">import</span> <span class="n">UTCDateTime</span><span class="p">,</span> <span class="n">Stream</span>
+<span class="kn">from</span> <span class="nn">obspy.core</span> <span class="kn">import</span> <span class="n">AttribDict</span>
+<span class="kn">from</span> <span class="nn">obspy.core.util.geodetics</span> <span class="kn">import</span> <span class="n">locations2degrees</span><span class="p">,</span> <span class="n">gps2DistAzimuth</span><span class="p">,</span> \
+    <span class="n">kilometer2degrees</span>
+<span class="kn">import</span> <span class="nn">obspy.signal.array_analysis</span> <span class="kn">as</span> <span class="nn">AA</span>
+<span class="kn">from</span> <span class="nn">obspy.taup</span> <span class="kn">import</span> <span class="n">getTravelTimes</span>
+<span class="kn">import</span> <span class="nn">scipy.interpolate</span> <span class="kn">as</span> <span class="nn">spi</span>
+<span class="kn">import</span> <span class="nn">matplotlib.cm</span> <span class="kn">as</span> <span class="nn">cm</span>
+
+<span class="n">KM_PER_DEG</span> <span class="o">=</span> <span class="mf">111.1949</span>
+
+
+<div class="viewcode-block" id="array_transfer_helper"><a class="viewcode-back" href="../../index.html#mess2014.mess2014.array_transfer_helper">[docs]</a><span class="k">def</span> <span class="nf">array_transfer_helper</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">inventory</span><span class="p">,</span> <span class="n">sx</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">sy</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+                          <span class="n">sls</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">numfreqs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                          <span class="n">coordsys</span><span class="o">=</span><span class="s">&#39;lonlat&#39;</span><span class="p">,</span> <span class="n">correct3dplane</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                          <span class="n">static3D</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">velcor</span><span class="o">=</span><span class="mf">4.8</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Array Response wrapper routine for MESS 2014.</span>
+
+<span class="sd">    :param stream: Waveforms for the array processing.</span>
+<span class="sd">    :type stream: :class:`obspy.core.stream.Stream`</span>
+<span class="sd">    :param inventory: Station metadata for waveforms</span>
+<span class="sd">    :type inventory: :class:`obspy.station.inventory.Inventory`</span>
+<span class="sd">    :param slx: Min/Max slowness for analysis in x direction.</span>
+<span class="sd">    :type slx: (float, float)</span>
+<span class="sd">    :param sly: Min/Max slowness for analysis in y direction.</span>
+<span class="sd">    :type sly: (float, float)</span>
+<span class="sd">    :param sls: step width of slowness grid</span>
+<span class="sd">    :type sls: float</span>
+<span class="sd">    :param frqmin: Low corner of frequency range for array analysis</span>
+<span class="sd">    :type frqmin: float</span>
+<span class="sd">    :param frqmax: High corner of frequency range for array analysis</span>
+<span class="sd">    :type frqmax: float</span>
+<span class="sd">    :param numfreqs: number of frequency values used for computing array</span>
+<span class="sd">     transfer function</span>
+<span class="sd">    :type numfreqs: int</span>
+<span class="sd">    :param coordsys: defined coordingate system of stations (lonlat or km)</span>
+<span class="sd">    :type coordsys: string</span>
+<span class="sd">    :param correct_3dplane: correct for an inclined surface (not used)</span>
+<span class="sd">    :type correct_3dplane: bool</span>
+<span class="sd">    :param static_3D: correct topography</span>
+<span class="sd">    :type static_3D: bool</span>
+<span class="sd">    :param velcor: velocity used for static_3D correction</span>
+<span class="sd">    :type velcor: float</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">inventory</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stations</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">==</span> <span class="n">station</span><span class="o">.</span><span class="n">code</span><span class="p">:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> \
+                    <span class="n">AttribDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+                               <span class="n">longitude</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>
+                               <span class="n">elevation</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">elevation</span><span class="p">))</span>
+                <span class="k">break</span>
+
+    <span class="n">sllx</span><span class="p">,</span> <span class="n">slmx</span> <span class="o">=</span> <span class="n">sx</span>
+    <span class="n">slly</span><span class="p">,</span> <span class="n">slmy</span> <span class="o">=</span> <span class="n">sx</span>
+    <span class="n">sllx</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">slmx</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">slly</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">slmy</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">sls</span> <span class="o">=</span> <span class="n">sls</span><span class="o">/</span><span class="n">KM_PER_DEG</span>
+
+    <span class="n">stepsfreq</span> <span class="o">=</span> <span class="p">(</span><span class="n">freqmax</span> <span class="o">-</span> <span class="n">freqmin</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">numfreqs</span><span class="p">)</span>
+    <span class="n">transff</span> <span class="o">=</span> <span class="n">AA</span><span class="o">.</span><span class="n">array_transff_freqslowness</span><span class="p">(</span>
+        <span class="n">stream</span><span class="p">,</span> <span class="p">(</span><span class="n">sllx</span><span class="p">,</span> <span class="n">slmx</span><span class="p">,</span> <span class="n">slly</span><span class="p">,</span> <span class="n">slmy</span><span class="p">),</span> <span class="n">sls</span><span class="p">,</span> <span class="n">freqmin</span><span class="p">,</span> <span class="n">freqmax</span><span class="p">,</span> <span class="n">stepsfreq</span><span class="p">,</span>
+        <span class="n">coordsys</span><span class="o">=</span><span class="n">coordsys</span><span class="p">,</span> <span class="n">correct_3dplane</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">static_3D</span><span class="o">=</span><span class="n">static3D</span><span class="p">,</span>
+        <span class="n">vel_cor</span><span class="o">=</span><span class="n">velcor</span><span class="p">)</span>
+
+    <span class="n">sllx</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">slmx</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">slly</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">slmy</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">sls</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+
+    <span class="n">slx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">sllx</span><span class="p">,</span> <span class="n">slmx</span><span class="o">+</span><span class="n">sls</span><span class="p">,</span> <span class="n">sls</span><span class="p">)</span>
+    <span class="n">sly</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">slly</span><span class="p">,</span> <span class="n">slmy</span><span class="o">+</span><span class="n">sls</span><span class="p">,</span> <span class="n">sls</span><span class="p">)</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">])</span>
+
+    <span class="c">#ax.pcolormesh(slx, sly, transff.T)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">sly</span><span class="p">,</span> <span class="n">slx</span><span class="p">,</span> <span class="n">transff</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;slowness [s/deg]&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;slowness [s/deg]&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">slx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">slx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">sly</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sly</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+</div>
+<div class="viewcode-block" id="array_analysis_helper"><a class="viewcode-back" href="../../index.html#mess2014.mess2014.array_analysis_helper">[docs]</a><span class="k">def</span> <span class="nf">array_analysis_helper</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">inventory</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">frqlow</span><span class="p">,</span> <span class="n">frqhigh</span><span class="p">,</span>
+                          <span class="nb">filter</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">baz_plot</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">static3D</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                          <span class="n">vel_corr</span><span class="o">=</span><span class="mf">4.8</span><span class="p">,</span> <span class="n">wlen</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">slx</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+                          <span class="n">sly</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">sls</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">array_response</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Array analysis wrapper routine for MESS 2014.</span>
+
+<span class="sd">    :param stream: Waveforms for the array processing.</span>
+<span class="sd">    :type stream: :class:`obspy.core.stream.Stream`</span>
+<span class="sd">    :param inventory: Station metadata for waveforms</span>
+<span class="sd">    :type inventory: :class:`obspy.station.inventory.Inventory`</span>
+<span class="sd">    :param method: Method used for the array analysis</span>
+<span class="sd">     (one of &quot;FK&quot;: Frequnecy Wavenumber, &quot;DLS&quot;: Delay and Sum,</span>
+<span class="sd">     &quot;PWS&quot;: Phase Weighted Stack, &quot;SWP&quot;: Slowness Whitened Power).</span>
+<span class="sd">    :type method: str</span>
+<span class="sd">    :param filter: Whether to bandpass data to selected frequency range</span>
+<span class="sd">    :type filter: bool</span>
+<span class="sd">    :param frqlow: Low corner of frequency range for array analysis</span>
+<span class="sd">    :type frqlow: float</span>
+<span class="sd">    :param frqhigh: High corner of frequency range for array analysis</span>
+<span class="sd">    :type frqhigh: float</span>
+<span class="sd">    :param baz_plot: Whether to show backazimuth-slowness map (True) or</span>
+<span class="sd">     slowness x-y map (False).</span>
+<span class="sd">    :type baz_plot: str</span>
+<span class="sd">    :param static3D: static correction of topography using `vel_corr` as</span>
+<span class="sd">     velocity (slow!)</span>
+<span class="sd">    :type static3D: bool</span>
+<span class="sd">    :param vel_corr: Correction velocity for static topography correction in</span>
+<span class="sd">     km/s.</span>
+<span class="sd">    :type vel_corr: float</span>
+<span class="sd">    :param wlen: sliding window for analysis in seconds, use -1 to use the</span>
+<span class="sd">     whole trace without windowing.</span>
+<span class="sd">    :type wlen: float</span>
+<span class="sd">    :param slx: Min/Max slowness for analysis in x direction.</span>
+<span class="sd">    :type slx: (float, float)</span>
+<span class="sd">    :param sly: Min/Max slowness for analysis in y direction.</span>
+<span class="sd">    :type sly: (float, float)</span>
+<span class="sd">    :param sls: step width of slowness grid</span>
+<span class="sd">    :type sls: float</span>
+<span class="sd">    :param array_response: superimpose array reponse function in plot (slow!)</span>
+<span class="sd">    :type array_response: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s">&quot;FK&quot;</span><span class="p">,</span> <span class="s">&quot;DLS&quot;</span><span class="p">,</span> <span class="s">&quot;PWS&quot;</span><span class="p">,</span> <span class="s">&quot;SWP&quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Invalid method: &#39;&#39;&quot;</span> <span class="o">%</span> <span class="n">method</span><span class="p">)</span>
+
+    <span class="n">sllx</span><span class="p">,</span> <span class="n">slmx</span> <span class="o">=</span> <span class="n">slx</span>
+    <span class="n">slly</span><span class="p">,</span> <span class="n">slmy</span> <span class="o">=</span> <span class="n">sly</span>
+
+    <span class="n">starttime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">])</span>
+    <span class="n">endtime</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">])</span>
+    <span class="n">stream</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">)</span>
+
+    <span class="c">#stream.attach_response(inventory)</span>
+    <span class="n">stream</span><span class="o">.</span><span class="n">merge</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">inventory</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stations</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">==</span> <span class="n">station</span><span class="o">.</span><span class="n">code</span><span class="p">:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> \
+                    <span class="n">AttribDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">latitude</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+                                    <span class="n">longitude</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>
+                                    <span class="n">elevation</span><span class="o">=</span><span class="n">station</span><span class="o">.</span><span class="n">elevation</span><span class="p">))</span>
+                <span class="k">break</span>
+
+    <span class="k">if</span> <span class="nb">filter</span><span class="p">:</span>
+        <span class="n">stream</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;bandpass&#39;</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="n">frqlow</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="n">frqhigh</span><span class="p">,</span>
+                      <span class="n">zerophase</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="n">stream</span>
+    <span class="n">spl</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s">&quot;obspy-&quot;</span><span class="p">)</span>
+    <span class="n">filename_patterns</span> <span class="o">=</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">,</span> <span class="s">&#39;pow_map_</span><span class="si">%03d</span><span class="s">.npy&#39;</span><span class="p">),</span>
+                         <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">,</span> <span class="s">&#39;apow_map_</span><span class="si">%03d</span><span class="s">.npy&#39;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="n">pow_map</span><span class="p">,</span> <span class="n">apow_map</span><span class="p">,</span> <span class="n">i</span><span class="p">):</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename_patterns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">%</span> <span class="n">i</span><span class="p">,</span> <span class="n">pow_map</span><span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">filename_patterns</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">%</span> <span class="n">i</span><span class="p">,</span> <span class="n">apow_map</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c"># next step would be needed if the correction velocity needs to be</span>
+        <span class="c"># estimated</span>
+        <span class="c">#</span>
+        <span class="n">sllx</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+        <span class="n">slmx</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+        <span class="n">slly</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+        <span class="n">slmy</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+        <span class="n">sls</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+        <span class="n">vc</span> <span class="o">=</span> <span class="n">vel_corr</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;FK&#39;</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="c">#slowness grid: X min, X max, Y min, Y max, Slow Step</span>
+                <span class="n">sll_x</span><span class="o">=</span><span class="n">sllx</span><span class="p">,</span> <span class="n">slm_x</span><span class="o">=</span><span class="n">slmx</span><span class="p">,</span> <span class="n">sll_y</span><span class="o">=</span><span class="n">slly</span><span class="p">,</span> <span class="n">slm_y</span><span class="o">=</span><span class="n">slmy</span><span class="p">,</span> <span class="n">sl_s</span><span class="o">=</span><span class="n">sls</span><span class="p">,</span>
+                <span class="c"># sliding window properties</span>
+                <span class="n">win_len</span><span class="o">=</span><span class="n">wlen</span><span class="p">,</span> <span class="n">win_frac</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+                <span class="c"># frequency properties</span>
+                <span class="n">frqlow</span><span class="o">=</span><span class="n">frqlow</span><span class="p">,</span> <span class="n">frqhigh</span><span class="o">=</span><span class="n">frqhigh</span><span class="p">,</span> <span class="n">prewhiten</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="c"># restrict output</span>
+                <span class="n">store</span><span class="o">=</span><span class="n">dump</span><span class="p">,</span>
+                <span class="n">semb_thres</span><span class="o">=-</span><span class="mf">1e9</span><span class="p">,</span> <span class="n">vel_thres</span><span class="o">=-</span><span class="mf">1e9</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+                <span class="n">timestamp</span><span class="o">=</span><span class="s">&#39;julsec&#39;</span><span class="p">,</span> <span class="n">stime</span><span class="o">=</span><span class="n">starttime</span><span class="p">,</span> <span class="n">etime</span><span class="o">=</span><span class="n">endtime</span><span class="p">,</span>
+                <span class="n">method</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">correct_3dplane</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">vel_cor</span><span class="o">=</span><span class="n">vc</span><span class="p">,</span>
+                <span class="n">static_3D</span><span class="o">=</span><span class="n">static3D</span><span class="p">)</span>
+
+            <span class="c"># here we do the array processing</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">()</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">AA</span><span class="o">.</span><span class="n">array_processing</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">&quot;Total time in routine: </span><span class="si">%f</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+
+            <span class="c"># make output human readable, adjust backazimuth to values</span>
+            <span class="c"># between 0 and 360</span>
+            <span class="n">t</span><span class="p">,</span> <span class="n">rel_power</span><span class="p">,</span> <span class="n">abs_power</span><span class="p">,</span> <span class="n">baz</span><span class="p">,</span> <span class="n">slow</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="c"># slowness grid: X min, X max, Y min, Y max, Slow Step</span>
+                <span class="n">sll_x</span><span class="o">=</span><span class="n">sllx</span><span class="p">,</span> <span class="n">slm_x</span><span class="o">=</span><span class="n">slmx</span><span class="p">,</span> <span class="n">sll_y</span><span class="o">=</span><span class="n">slly</span><span class="p">,</span> <span class="n">slm_y</span><span class="o">=</span><span class="n">slmy</span><span class="p">,</span> <span class="n">sl_s</span><span class="o">=</span><span class="n">sls</span><span class="p">,</span>
+                <span class="c"># sliding window properties</span>
+                <span class="c"># frequency properties</span>
+                <span class="n">frqlow</span><span class="o">=</span><span class="n">frqlow</span><span class="p">,</span> <span class="n">frqhigh</span><span class="o">=</span><span class="n">frqhigh</span><span class="p">,</span>
+                <span class="c"># restrict output</span>
+                <span class="n">store</span><span class="o">=</span><span class="n">dump</span><span class="p">,</span>
+                <span class="n">win_len</span><span class="o">=</span><span class="n">wlen</span><span class="p">,</span> <span class="n">win_frac</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+                <span class="n">nthroot</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+                <span class="n">verbose</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">timestamp</span><span class="o">=</span><span class="s">&#39;julsec&#39;</span><span class="p">,</span>
+                <span class="n">stime</span><span class="o">=</span><span class="n">starttime</span><span class="p">,</span> <span class="n">etime</span><span class="o">=</span><span class="n">endtime</span><span class="p">,</span> <span class="n">vel_cor</span><span class="o">=</span><span class="n">vc</span><span class="p">,</span>
+                <span class="n">static_3D</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+            <span class="c"># here we do the array processing</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">()</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">AA</span><span class="o">.</span><span class="n">beamforming</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">print</span> <span class="s">&quot;Total time in routine: </span><span class="si">%f</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+
+            <span class="c"># make output human readable, adjust backazimuth to values</span>
+            <span class="c"># between 0 and 360</span>
+            <span class="n">trace</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">t</span><span class="p">,</span> <span class="n">rel_power</span><span class="p">,</span> <span class="n">baz</span><span class="p">,</span> <span class="n">slow_x</span><span class="p">,</span> <span class="n">slow_y</span><span class="p">,</span> <span class="n">slow</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">T</span>
+
+            <span class="c"># calculating array response</span>
+        <span class="k">if</span> <span class="n">array_response</span><span class="p">:</span>
+            <span class="n">stepsfreq</span> <span class="o">=</span> <span class="p">(</span><span class="n">frqhigh</span> <span class="o">-</span> <span class="n">frqlow</span><span class="p">)</span> <span class="o">/</span> <span class="mf">10.</span>
+            <span class="n">tf_slx</span> <span class="o">=</span> <span class="n">sllx</span>
+            <span class="n">tf_smx</span> <span class="o">=</span> <span class="n">slmx</span>
+            <span class="n">tf_sly</span> <span class="o">=</span> <span class="n">slly</span>
+            <span class="n">tf_smy</span> <span class="o">=</span> <span class="n">slmy</span>
+            <span class="n">transff</span> <span class="o">=</span> <span class="n">AA</span><span class="o">.</span><span class="n">array_transff_freqslowness</span><span class="p">(</span>
+                <span class="n">stream</span><span class="p">,</span> <span class="p">(</span><span class="n">tf_slx</span><span class="p">,</span> <span class="n">tf_smx</span><span class="p">,</span> <span class="n">tf_sly</span><span class="p">,</span> <span class="n">tf_smy</span><span class="p">),</span> <span class="n">sls</span><span class="p">,</span> <span class="n">frqlow</span><span class="p">,</span>
+                <span class="n">frqhigh</span><span class="p">,</span> <span class="n">stepsfreq</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="s">&#39;lonlat&#39;</span><span class="p">,</span>
+                <span class="n">correct_3dplane</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">static_3D</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">vel_cor</span><span class="o">=</span><span class="n">vc</span><span class="p">)</span>
+
+        <span class="c"># now let&#39;s do the plotting</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">rainbow</span>
+
+        <span class="c">#</span>
+        <span class="c"># we will plot everything in s/deg</span>
+        <span class="n">slow</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+        <span class="n">sllx</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+        <span class="n">slmx</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+        <span class="n">slly</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+        <span class="n">slmy</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+        <span class="n">sls</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+
+        <span class="n">numslice</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="n">powmap</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">slx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">sllx</span><span class="o">-</span><span class="n">sls</span><span class="p">,</span> <span class="n">slmx</span><span class="p">,</span> <span class="n">sls</span><span class="p">)</span>
+        <span class="n">sly</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">slly</span><span class="o">-</span><span class="n">sls</span><span class="p">,</span> <span class="n">slmy</span><span class="p">,</span> <span class="n">sls</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">baz_plot</span><span class="p">:</span>
+            <span class="n">maxslowg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">slmx</span><span class="o">*</span><span class="n">slmx</span> <span class="o">+</span> <span class="n">slmy</span><span class="o">*</span><span class="n">slmy</span><span class="p">)</span>
+            <span class="n">bzs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">sls</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">slmx</span><span class="o">*</span><span class="n">slmx</span> <span class="o">+</span> <span class="n">slmy</span><span class="o">*</span><span class="n">slmy</span><span class="p">))</span><span class="o">*</span><span class="mi">180</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+            <span class="n">xi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="n">maxslowg</span><span class="p">,</span> <span class="n">sls</span><span class="p">)</span>
+            <span class="n">yi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mf">180.</span><span class="p">,</span> <span class="mf">180.</span><span class="p">,</span> <span class="n">bzs</span><span class="p">)</span>
+            <span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">)</span>
+        <span class="c"># reading in the rel-power maps</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">numslice</span><span class="p">):</span>
+            <span class="n">powmap</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">filename_patterns</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">%</span> <span class="n">i</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">method</span> <span class="o">!=</span> <span class="s">&#39;FK&#39;</span><span class="p">:</span>
+                <span class="n">trace</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">filename_patterns</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">%</span> <span class="n">i</span><span class="p">))</span>
+
+        <span class="n">npts</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">npts</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">npts</span> <span class="o">/</span> <span class="n">df</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">df</span><span class="p">)</span>
+
+        <span class="c"># if we choose windowlen &gt; 0. we now move through our slices</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">numslice</span><span class="p">):</span>
+            <span class="n">slow_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">((</span><span class="n">baz</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="mf">180.</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.</span><span class="p">)</span><span class="o">*</span><span class="n">slow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">slow_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">((</span><span class="n">baz</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="mf">180.</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.</span><span class="p">)</span><span class="o">*</span><span class="n">slow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">st</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">-</span> <span class="n">starttime</span>
+            <span class="k">if</span> <span class="n">wlen</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">en</span> <span class="o">=</span> <span class="n">endtime</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">en</span> <span class="o">=</span> <span class="n">st</span> <span class="o">+</span> <span class="n">wlen</span>
+            <span class="k">print</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="c"># add polar and colorbar axes</span>
+            <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+            <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.87</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.10</span><span class="p">])</span>
+            <span class="c"># here we plot the first trace on top of the slowness map</span>
+            <span class="c"># and indicate the possibiton of the lsiding window as green box</span>
+            <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&#39;FK&#39;</span><span class="p">:</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">spl</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="s">&#39;k&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">wlen</span> <span class="o">&gt;</span> <span class="mf">0.</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">ax1</span><span class="o">.</span><span class="n">axvspan</span><span class="p">(</span><span class="n">st</span><span class="p">,</span> <span class="n">en</span><span class="p">,</span> <span class="n">facecolor</span><span class="o">=</span><span class="s">&#39;g&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                        <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">trace</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">/</span><span class="n">df</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">df</span><span class="p">)</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">trace</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="s">&#39;k&#39;</span><span class="p">)</span>
+
+            <span class="n">ax1</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.10</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.70</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">])</span>
+
+            <span class="c"># if we have chosen the baz_plot option a re-griding</span>
+            <span class="c"># of the sx,sy slowness map is needed</span>
+            <span class="k">if</span> <span class="n">baz_plot</span><span class="p">:</span>
+                <span class="n">slowgrid</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">transgrid</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="nb">pow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">powmap</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">ix</span><span class="p">,</span> <span class="n">sx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">slx</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">iy</span><span class="p">,</span> <span class="n">sy</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sly</span><span class="p">):</span>
+                        <span class="n">bbaz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">sx</span><span class="p">,</span> <span class="n">sy</span><span class="p">)</span><span class="o">*</span><span class="mi">180</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">+</span><span class="mf">180.</span>
+                        <span class="k">if</span> <span class="n">bbaz</span> <span class="o">&gt;</span> <span class="mf">180.</span><span class="p">:</span>
+                            <span class="n">bbaz</span> <span class="o">=</span> <span class="o">-</span><span class="mf">180.</span> <span class="o">+</span> <span class="p">(</span><span class="n">bbaz</span><span class="o">-</span><span class="mf">180.</span><span class="p">)</span>
+                        <span class="n">slowgrid</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sx</span><span class="o">*</span><span class="n">sx</span><span class="o">+</span><span class="n">sy</span><span class="o">*</span><span class="n">sy</span><span class="p">),</span> <span class="n">bbaz</span><span class="p">,</span>
+                                         <span class="nb">pow</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span> <span class="n">iy</span><span class="p">]))</span>
+                        <span class="k">if</span> <span class="n">array_response</span><span class="p">:</span>
+                            <span class="n">tslow</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">sx</span><span class="o">+</span><span class="n">slow_x</span><span class="p">)</span> <span class="o">*</span>
+                                     <span class="p">(</span><span class="n">sx</span><span class="o">+</span><span class="n">slow_x</span><span class="p">)</span><span class="o">+</span><span class="p">(</span><span class="n">sy</span><span class="o">+</span><span class="n">slow_y</span><span class="p">)</span> <span class="o">*</span>
+                                     <span class="p">(</span><span class="n">sy</span><span class="o">+</span><span class="n">slow_y</span><span class="p">)))</span>
+                            <span class="n">tbaz</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">sx</span><span class="o">+</span><span class="n">slow_x</span><span class="p">,</span> <span class="n">sy</span><span class="o">+</span><span class="n">slow_y</span><span class="p">)</span> <span class="o">*</span>
+                                    <span class="mi">180</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">+</span> <span class="mf">180.</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">tbaz</span> <span class="o">&gt;</span> <span class="mf">180.</span><span class="p">:</span>
+                                <span class="n">tbaz</span> <span class="o">=</span> <span class="o">-</span><span class="mf">180.</span> <span class="o">+</span> <span class="p">(</span><span class="n">tbaz</span><span class="o">-</span><span class="mf">180.</span><span class="p">)</span>
+                            <span class="n">transgrid</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">tslow</span><span class="p">,</span> <span class="n">tbaz</span><span class="p">,</span>
+                                              <span class="n">transff</span><span class="p">[</span><span class="n">ix</span><span class="p">,</span> <span class="n">iy</span><span class="p">]))</span>
+
+                <span class="n">slowgrid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">slowgrid</span><span class="p">)</span>
+                <span class="n">sl</span> <span class="o">=</span> <span class="n">slowgrid</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+                <span class="n">bz</span> <span class="o">=</span> <span class="n">slowgrid</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+                <span class="n">slowg</span> <span class="o">=</span> <span class="n">slowgrid</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>
+                <span class="n">grid</span> <span class="o">=</span> <span class="n">spi</span><span class="o">.</span><span class="n">griddata</span><span class="p">((</span><span class="n">sl</span><span class="p">,</span> <span class="n">bz</span><span class="p">),</span> <span class="n">slowg</span><span class="p">,</span> <span class="p">(</span><span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_y</span><span class="p">),</span>
+                                    <span class="n">method</span><span class="o">=</span><span class="s">&#39;nearest&#39;</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">array_response</span><span class="p">:</span>
+                    <span class="n">level</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+                    <span class="n">transgrid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">transgrid</span><span class="p">)</span>
+                    <span class="n">tsl</span> <span class="o">=</span> <span class="n">transgrid</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+                    <span class="n">tbz</span> <span class="o">=</span> <span class="n">transgrid</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span>
+                    <span class="n">transg</span> <span class="o">=</span> <span class="n">transgrid</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span>
+                    <span class="n">trans</span> <span class="o">=</span> <span class="n">spi</span><span class="o">.</span><span class="n">griddata</span><span class="p">((</span><span class="n">tsl</span><span class="p">,</span> <span class="n">tbz</span><span class="p">),</span> <span class="n">transg</span><span class="p">,</span>
+                                         <span class="p">(</span><span class="n">grid_x</span><span class="p">,</span> <span class="n">grid_y</span><span class="p">),</span>
+                                         <span class="n">method</span><span class="o">=</span><span class="s">&#39;nearest&#39;</span><span class="p">)</span>
+                    <span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">xi</span><span class="p">,</span> <span class="n">yi</span><span class="p">,</span> <span class="n">trans</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">,</span>
+                               <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;slowness [s/deg]&#39;</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;backazimuth [deg]&#39;</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xi</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">yi</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">yi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;slowness [s/deg]&#39;</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;slowness [s/deg]&#39;</span><span class="p">)</span>
+                <span class="n">slow_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">((</span><span class="n">baz</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="mf">180.</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.</span><span class="p">)</span><span class="o">*</span><span class="n">slow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">slow_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">((</span><span class="n">baz</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="mf">180.</span><span class="p">)</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">/</span><span class="mf">180.</span><span class="p">)</span><span class="o">*</span><span class="n">slow</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">pcolormesh</span><span class="p">(</span><span class="n">slx</span><span class="p">,</span> <span class="n">sly</span><span class="p">,</span> <span class="n">powmap</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">arrow</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">slow_y</span><span class="p">,</span> <span class="n">slow_x</span><span class="p">,</span> <span class="n">head_width</span><span class="o">=</span><span class="mf">0.005</span><span class="p">,</span>
+                         <span class="n">head_length</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">fc</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">,</span> <span class="n">ec</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">array_response</span><span class="p">:</span>
+                    <span class="n">tslx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">sllx</span><span class="o">+</span><span class="n">slow_x</span><span class="p">,</span> <span class="n">slmx</span><span class="o">+</span><span class="n">slow_x</span><span class="o">+</span><span class="n">sls</span><span class="p">,</span> <span class="n">sls</span><span class="p">)</span>
+                    <span class="n">tsly</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">slly</span><span class="o">+</span><span class="n">slow_y</span><span class="p">,</span> <span class="n">slmy</span><span class="o">+</span><span class="n">slow_y</span><span class="o">+</span><span class="n">sls</span><span class="p">,</span> <span class="n">sls</span><span class="p">)</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">ax</span><span class="o">.</span><span class="n">contour</span><span class="p">(</span><span class="n">tsly</span><span class="p">,</span> <span class="n">tslx</span><span class="p">,</span> <span class="n">transff</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="s">&#39;k&#39;</span><span class="p">,</span>
+                                   <span class="n">linewidth</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="k">pass</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">slx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">slx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">sly</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sly</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">new_time</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+            <span class="n">result</span> <span class="o">=</span> <span class="s">&quot;BAZ: </span><span class="si">%.2f</span><span class="s">, Slow: </span><span class="si">%.2f</span><span class="s"> s/deg, Time </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span>
+                <span class="n">baz</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">slow</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">UTCDateTime</span><span class="p">(</span><span class="n">new_time</span><span class="p">))</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+            <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">tmpdir</span><span class="p">)</span>
+
+</div>
+<div class="viewcode-block" id="attach_coordinates_to_traces"><a class="viewcode-back" href="../../index.html#mess2014.mess2014.attach_coordinates_to_traces">[docs]</a><span class="k">def</span> <span class="nf">attach_coordinates_to_traces</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">inventory</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to add coordinates to traces.</span>
+
+<span class="sd">    It extracts coordinates from a :class:`obspy.station.inventory.Inventory`</span>
+<span class="sd">    object and writes them to each trace&#39;s stats attribute. If an event is</span>
+<span class="sd">    given, the distance in degree will also be attached.</span>
+
+<span class="sd">    :param stream: Waveforms for the array processing.</span>
+<span class="sd">    :type stream: :class:`obspy.core.stream.Stream`</span>
+<span class="sd">    :param inventory: Station metadata for waveforms</span>
+<span class="sd">    :type inventory: :class:`obspy.station.inventory.Inventory`</span>
+<span class="sd">    :param event: If the event is given, the event distance in degree will also</span>
+<span class="sd">     be attached to the traces.</span>
+<span class="sd">    :type event: :class:`obspy.core.event.Event`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c"># Get the coordinates for all stations</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">network</span> <span class="ow">in</span> <span class="n">inventory</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">network</span><span class="p">:</span>
+            <span class="n">coords</span><span class="p">[</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">.</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">network</span><span class="o">.</span><span class="n">code</span><span class="p">,</span> <span class="n">station</span><span class="o">.</span><span class="n">code</span><span class="p">)]</span> <span class="o">=</span> \
+                <span class="p">{</span><span class="s">&quot;latitude&quot;</span><span class="p">:</span> <span class="n">station</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+                 <span class="s">&quot;longitude&quot;</span><span class="p">:</span> <span class="n">station</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>
+                 <span class="s">&quot;elevation&quot;</span><span class="p">:</span> <span class="n">station</span><span class="o">.</span><span class="n">elevation</span><span class="p">}</span>
+
+    <span class="c"># Calculate the event-station distances.</span>
+    <span class="k">if</span> <span class="n">event</span><span class="p">:</span>
+        <span class="n">event_lat</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">latitude</span>
+        <span class="n">event_lng</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">longitude</span>
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">coords</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">value</span><span class="p">[</span><span class="s">&quot;distance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">locations2degrees</span><span class="p">(</span>
+                <span class="n">value</span><span class="p">[</span><span class="s">&quot;latitude&quot;</span><span class="p">],</span> <span class="n">value</span><span class="p">[</span><span class="s">&quot;longitude&quot;</span><span class="p">],</span> <span class="n">event_lat</span><span class="p">,</span> <span class="n">event_lng</span><span class="p">)</span>
+
+    <span class="c"># Attach the information to the traces.</span>
+    <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+        <span class="n">station</span> <span class="o">=</span> <span class="s">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&quot;.&quot;</span><span class="p">)[:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">coords</span><span class="p">[</span><span class="n">station</span><span class="p">]</span>
+        <span class="n">trace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> <span class="n">AttribDict</span><span class="p">()</span>
+        <span class="n">trace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">coordinates</span><span class="o">.</span><span class="n">latitude</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="s">&quot;latitude&quot;</span><span class="p">]</span>
+        <span class="n">trace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">coordinates</span><span class="o">.</span><span class="n">longitude</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="s">&quot;longitude&quot;</span><span class="p">]</span>
+        <span class="n">trace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">coordinates</span><span class="o">.</span><span class="n">elevation</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="s">&quot;elevation&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">event</span><span class="p">:</span>
+            <span class="n">trace</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">distance</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="s">&quot;distance&quot;</span><span class="p">]</span>
+
+</div>
+<div class="viewcode-block" id="show_distance_plot"><a class="viewcode-back" href="../../index.html#mess2014.mess2014.show_distance_plot">[docs]</a><span class="k">def</span> <span class="nf">show_distance_plot</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">inventory</span><span class="p">,</span> <span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">,</span>
+                       <span class="n">plot_travel_times</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots distance dependent seismogramm sections.</span>
+
+<span class="sd">    :param stream: The waveforms.</span>
+<span class="sd">    :type stream: :class:`obspy.core.stream.Stream`</span>
+<span class="sd">    :param event: The event.</span>
+<span class="sd">    :type event: :class:`obspy.core.event.Event`</span>
+<span class="sd">    :param inventory: The station information.</span>
+<span class="sd">    :type inventory: :class:`obspy.station.inventory.Inventory`</span>
+<span class="sd">    :param starttime: starttime of traces to be plotted</span>
+<span class="sd">    :type starttime: UTCDateTime</span>
+<span class="sd">    :param endttime: endttime of traces to be plotted</span>
+<span class="sd">    :type endttime: UTCDateTime</span>
+<span class="sd">    :param plot_travel_times: flag whether phases are marked as traveltime plots</span>
+<span class="sd">     in the section obspy.taup is used to calculate the phases</span>
+<span class="sd">    :type pot_travel_times: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">stream</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">starttime</span><span class="o">=</span><span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="o">=</span><span class="n">endtime</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">event_depth_in_km</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">/</span> <span class="mf">1000.0</span>
+    <span class="n">event_time</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">time</span>
+
+    <span class="n">attach_coordinates_to_traces</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">inventory</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="n">event</span><span class="p">)</span>
+
+    <span class="n">cm</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">jet</span>
+
+    <span class="n">stream</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">stream</span><span class="o">.</span><span class="n">traces</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">distance</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="c"># One color for each trace.</span>
+    <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="n">cm</span><span class="p">(</span><span class="n">_i</span><span class="p">)</span> <span class="k">for</span> <span class="n">_i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">stream</span><span class="p">))]</span>
+
+    <span class="c"># Relative event times.</span>
+    <span class="n">times_array</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">times</span><span class="p">()</span> <span class="o">+</span> <span class="p">(</span><span class="n">stream</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">-</span> <span class="n">event_time</span><span class="p">)</span>
+
+    <span class="n">distances</span> <span class="o">=</span> <span class="p">[</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">distance</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">]</span>
+    <span class="n">min_distance</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">distances</span><span class="p">)</span>
+    <span class="n">max_distance</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">distances</span><span class="p">)</span>
+    <span class="n">distance_range</span> <span class="o">=</span> <span class="n">max_distance</span> <span class="o">-</span> <span class="n">min_distance</span>
+    <span class="n">stream_range</span> <span class="o">=</span> <span class="n">distance_range</span> <span class="o">/</span> <span class="mf">10.0</span>
+
+    <span class="c"># Normalize data and &quot;shift to distance&quot;.</span>
+    <span class="n">stream</span><span class="o">.</span><span class="n">normalize</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">*=</span> <span class="n">stream_range</span>
+        <span class="n">tr</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">distance</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">_i</span><span class="p">,</span> <span class="n">tr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stream</span><span class="p">):</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">times_array</span><span class="p">,</span> <span class="n">tr</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">&quot;</span><span class="si">%s</span><span class="s">.</span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">network</span><span class="p">,</span>
+                 <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">_i</span><span class="p">])</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">&quot;Distance in degree to event&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">&quot;Time in seconds since event&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+
+    <span class="n">dist_min</span><span class="p">,</span> <span class="n">dist_max</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">plot_travel_times</span><span class="p">:</span>
+
+        <span class="n">distances</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="n">ttimes</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">dist_min</span><span class="p">,</span> <span class="n">dist_max</span><span class="p">,</span> <span class="mi">1000</span><span class="p">):</span>
+            <span class="n">tts</span> <span class="o">=</span> <span class="n">getTravelTimes</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">event_depth_in_km</span><span class="p">,</span> <span class="s">&quot;ak135&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">phase</span> <span class="ow">in</span> <span class="n">tts</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">phase</span><span class="p">[</span><span class="s">&quot;phase_name&quot;</span><span class="p">]</span>
+                <span class="n">distances</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                <span class="n">ttimes</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">phase</span><span class="p">[</span><span class="s">&quot;time&quot;</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">distances</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">():</span>
+            <span class="n">min_distance</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">distances</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="n">max_distance</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">distances</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="n">min_tt_time</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">ttimes</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="n">max_tt_time</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">ttimes</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+
+            <span class="k">if</span> <span class="n">min_tt_time</span> <span class="o">&gt;=</span> <span class="n">times_array</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">or</span> \
+                    <span class="n">max_tt_time</span> <span class="o">&lt;=</span> <span class="n">times_array</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> \
+                    <span class="p">(</span><span class="n">max_distance</span> <span class="o">-</span> <span class="n">min_distance</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.8</span> <span class="o">*</span> <span class="p">(</span><span class="n">dist_max</span> <span class="o">-</span> <span class="n">dist_min</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">ttime</span> <span class="o">=</span> <span class="n">ttimes</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">dist</span> <span class="o">=</span> <span class="n">distances</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">max</span><span class="p">(</span><span class="n">ttime</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">times_array</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.9</span> <span class="o">*</span> <span class="n">times_array</span><span class="o">.</span><span class="n">ptp</span><span class="p">():</span>
+                <span class="k">continue</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">ttime</span><span class="p">,</span> <span class="n">dist</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=-</span><span class="mi">10</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s">&quot;black&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">ttime</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.005</span> <span class="o">*</span> <span class="n">times_array</span><span class="o">.</span><span class="n">ptp</span><span class="p">(),</span>
+                     <span class="n">dist_max</span> <span class="o">-</span> <span class="mf">0.02</span> <span class="o">*</span> <span class="p">(</span><span class="n">dist_max</span> <span class="o">-</span> <span class="n">dist_min</span><span class="p">),</span>
+                     <span class="n">key</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="n">dist_min</span><span class="p">,</span> <span class="n">dist_max</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">times_array</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">times_array</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">short_str</span><span class="p">())</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+</div>
+<div class="viewcode-block" id="align_phases"><a class="viewcode-back" href="../../index.html#mess2014.mess2014.align_phases">[docs]</a><span class="k">def</span> <span class="nf">align_phases</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span> <span class="n">inventory</span><span class="p">,</span> <span class="n">phase_name</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s">&quot;simple&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Aligns the waveforms with the theoretical travel times for some phase. The</span>
+<span class="sd">    theoretical travel times are calculated with obspy.taup.</span>
+
+<span class="sd">    :param stream: Waveforms for the array processing.</span>
+<span class="sd">    :type stream: :class:`obspy.core.stream.Stream`</span>
+<span class="sd">    :param event: The event for which to calculate phases.</span>
+<span class="sd">    :type event: :class:`obspy.core.event.Event`</span>
+<span class="sd">    :param inventory: Station metadata.</span>
+<span class="sd">    :type inventory: :class:`obspy.station.inventory.Inventory`</span>
+<span class="sd">    :param phase_name: The name of the phase you want to align. Must be</span>
+<span class="sd">        contained in all traces. Otherwise the behaviour is undefined.</span>
+<span class="sd">    :type phase_name: str</span>
+<span class="sd">    :param method: Method is either `simple` or `fft`. Simple will just shift</span>
+<span class="sd">     the starttime of Trace, while &#39;fft&#39; will do the shift in the frequency</span>
+<span class="sd">     domain. Defaults to `simple`.</span>
+<span class="sd">    :type method: str</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">method</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s">&#39;simple&#39;</span><span class="p">,</span> <span class="s">&#39;fft&#39;</span><span class="p">]:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;method must be &#39;simple&#39; or &#39;fft&#39;&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="n">stream</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">attach_coordinates_to_traces</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">inventory</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
+
+    <span class="n">stream</span><span class="o">.</span><span class="n">traces</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">stream</span><span class="o">.</span><span class="n">traces</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">distance</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">tr_1</span> <span class="o">=</span> <span class="n">stream</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">tt_1</span> <span class="o">=</span> <span class="n">getTravelTimes</span><span class="p">(</span><span class="n">tr_1</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span>
+                          <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">/</span> <span class="mf">1000.0</span><span class="p">,</span>
+                          <span class="s">&quot;ak135&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">tt</span> <span class="ow">in</span> <span class="n">tt_1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">tt</span><span class="p">[</span><span class="s">&quot;phase_name&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">phase_name</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">tt_1</span> <span class="o">=</span> <span class="n">tt</span><span class="p">[</span><span class="s">&quot;time&quot;</span><span class="p">]</span>
+        <span class="k">break</span>
+
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">:</span>
+        <span class="n">tt</span> <span class="o">=</span> <span class="n">getTravelTimes</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span>
+                            <span class="n">event</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">depth</span> <span class="o">/</span> <span class="mf">1000.0</span><span class="p">,</span>
+                            <span class="s">&quot;ak135&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tt</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">t</span><span class="p">[</span><span class="s">&quot;phase_name&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">phase_name</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">tt</span> <span class="o">=</span> <span class="n">t</span><span class="p">[</span><span class="s">&quot;time&quot;</span><span class="p">]</span>
+            <span class="k">break</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s">&quot;simple&quot;</span><span class="p">:</span>
+            <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="o">-=</span> <span class="p">(</span><span class="n">tt</span> <span class="o">-</span> <span class="n">tt_1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">AA</span><span class="o">.</span><span class="n">shifttrace_freq</span><span class="p">(</span><span class="n">Stream</span><span class="p">(</span><span class="n">traces</span><span class="o">=</span><span class="p">[</span><span class="n">tr</span><span class="p">]),</span> <span class="p">[</span><span class="o">-</span> <span class="p">((</span><span class="n">tt</span> <span class="o">-</span> <span class="n">tt_1</span><span class="p">))])</span>
+    <span class="k">return</span> <span class="n">stream</span>
+
+</div>
+<div class="viewcode-block" id="vespagram"><a class="viewcode-back" href="../../index.html#mess2014.mess2014.vespagram">[docs]</a><span class="k">def</span> <span class="nf">vespagram</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">ev</span><span class="p">,</span> <span class="n">inv</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">frqlow</span><span class="p">,</span> <span class="n">frqhigh</span><span class="p">,</span> <span class="n">baz</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">nthroot</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+              <span class="nb">filter</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">static3D</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">vel_corr</span><span class="o">=</span><span class="mf">4.8</span><span class="p">,</span> <span class="n">sl</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">),</span>
+              <span class="n">align</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">align_phase</span><span class="o">=</span><span class="p">[</span><span class="s">&#39;P&#39;</span><span class="p">,</span> <span class="s">&#39;Pdiff&#39;</span><span class="p">],</span> <span class="n">plot_trace</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    vespagram wrapper routine for MESS 2014.</span>
+
+<span class="sd">    :param stream: Waveforms for the array processing.</span>
+<span class="sd">    :type stream: :class:`obspy.core.stream.Stream`</span>
+<span class="sd">    :param inventory: Station metadata for waveforms</span>
+<span class="sd">    :type inventory: :class:`obspy.station.inventory.Inventory`</span>
+<span class="sd">    :param method: Method used for the array analysis</span>
+<span class="sd">        (one of &quot;DLS&quot;: Delay and Sum, &quot;PWS&quot;: Phase Weighted Stack).</span>
+<span class="sd">    :type method: str</span>
+<span class="sd">    :param frqlow: Low corner of frequency range for array analysis</span>
+<span class="sd">    :type frqlow: float</span>
+<span class="sd">    :param frqhigh: High corner of frequency range for array analysis</span>
+<span class="sd">    :type frqhigh: float</span>
+<span class="sd">    :param baz: pre-defined (theoretical or calculated) backazimuth used for calculation</span>
+<span class="sd">    :type baz_plot: float</span>
+<span class="sd">    :param scale: scale for plotting</span>
+<span class="sd">    :type scale: float</span>
+<span class="sd">    :param nthroot: estimating the nthroot for calculation of the beam</span>
+<span class="sd">    :type nthroot: int</span>
+<span class="sd">    :param filter: Whether to bandpass data to selected frequency range</span>
+<span class="sd">    :type filter: bool</span>
+<span class="sd">    :param static3D: static correction of topography using `vel_corr` as</span>
+<span class="sd">        velocity (slow!)</span>
+<span class="sd">    :type static3D: bool</span>
+<span class="sd">    :param vel_corr: Correction velocity for static topography correction in</span>
+<span class="sd">        km/s.</span>
+<span class="sd">    :type vel_corr: float</span>
+<span class="sd">    :param sl: Min/Max and stepwidthslowness for analysis</span>
+<span class="sd">    :type sl: (float, float,float)</span>
+<span class="sd">    :param align: whether to align the vespagram to a certain phase</span>
+<span class="sd">    :type align: bool</span>
+<span class="sd">    :param align_phase: phase to be aligned with (might be a list if simulateneous arivials are expected (P,PcP,Pdif)</span>
+<span class="sd">    :type align: str</span>
+<span class="sd">    :param plot_trace: if True plot the vespagram as wiggle plot, if False as density map</span>
+<span class="sd">    :type align: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">starttime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">])</span>
+    <span class="n">endtime</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">])</span>
+    <span class="n">stream</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">)</span>
+
+    <span class="n">org</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="n">preferred_origin</span><span class="p">()</span> <span class="ow">or</span> <span class="n">ev</span><span class="o">.</span><span class="n">origins</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">ev_lat</span> <span class="o">=</span> <span class="n">org</span><span class="o">.</span><span class="n">latitude</span>
+    <span class="n">ev_lon</span> <span class="o">=</span> <span class="n">org</span><span class="o">.</span><span class="n">longitude</span>
+    <span class="n">ev_depth</span> <span class="o">=</span> <span class="n">org</span><span class="o">.</span><span class="n">depth</span><span class="o">/</span><span class="mf">1000.</span>  <span class="c"># in km</span>
+    <span class="n">ev_otime</span> <span class="o">=</span> <span class="n">org</span><span class="o">.</span><span class="n">time</span>
+
+    <span class="n">sll</span><span class="p">,</span> <span class="n">slm</span><span class="p">,</span> <span class="n">sls</span> <span class="o">=</span> <span class="n">sl</span>
+    <span class="n">sll</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">slm</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">sls</span> <span class="o">/=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">center_lon</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">center_lat</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">center_elv</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">seismo</span> <span class="o">=</span> <span class="n">stream</span>
+    <span class="n">seismo</span><span class="o">.</span><span class="n">attach_response</span><span class="p">(</span><span class="n">inv</span><span class="p">)</span>
+    <span class="n">seismo</span><span class="o">.</span><span class="n">merge</span><span class="p">()</span>
+    <span class="n">sz</span> <span class="o">=</span> <span class="n">Stream</span><span class="p">()</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">seismo</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">station</span> <span class="ow">in</span> <span class="n">inv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stations</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">station</span> <span class="o">==</span> <span class="n">station</span><span class="o">.</span><span class="n">code</span><span class="p">:</span>
+                <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">coordinates</span> <span class="o">=</span> \
+                    <span class="n">AttribDict</span><span class="p">({</span><span class="s">&#39;latitude&#39;</span><span class="p">:</span> <span class="n">station</span><span class="o">.</span><span class="n">latitude</span><span class="p">,</span>
+                                <span class="s">&#39;longitude&#39;</span><span class="p">:</span> <span class="n">station</span><span class="o">.</span><span class="n">longitude</span><span class="p">,</span>
+                                <span class="s">&#39;elevation&#39;</span><span class="p">:</span> <span class="n">station</span><span class="o">.</span><span class="n">elevation</span><span class="p">})</span>
+                <span class="n">center_lon</span> <span class="o">+=</span> <span class="n">station</span><span class="o">.</span><span class="n">longitude</span>
+                <span class="n">center_lat</span> <span class="o">+=</span> <span class="n">station</span><span class="o">.</span><span class="n">latitude</span>
+                <span class="n">center_elv</span> <span class="o">+=</span> <span class="n">station</span><span class="o">.</span><span class="n">elevation</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">sz</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tr</span><span class="p">)</span>
+
+    <span class="n">center_lon</span> <span class="o">/=</span> <span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">center_lat</span> <span class="o">/=</span> <span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+    <span class="n">center_elv</span> <span class="o">/=</span> <span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+    <span class="n">starttime</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">starttime</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">])</span>
+    <span class="n">stt</span> <span class="o">=</span> <span class="n">starttime</span>
+    <span class="n">endtime</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">endtime</span> <span class="k">for</span> <span class="n">tr</span> <span class="ow">in</span> <span class="n">stream</span><span class="p">])</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">endtime</span>
+    <span class="n">stream</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">starttime</span><span class="p">,</span> <span class="n">endtime</span><span class="p">)</span>
+
+    <span class="c">#nut = 0</span>
+    <span class="n">max_amp</span> <span class="o">=</span> <span class="mf">0.</span>
+    <span class="n">sz</span><span class="o">.</span><span class="n">trim</span><span class="p">(</span><span class="n">stt</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+    <span class="n">sz</span><span class="o">.</span><span class="n">detrend</span><span class="p">(</span><span class="s">&#39;simple&#39;</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="n">sz</span>
+    <span class="n">fl</span><span class="p">,</span> <span class="n">fh</span> <span class="o">=</span> <span class="n">frqlow</span><span class="p">,</span> <span class="n">frqhigh</span>
+    <span class="k">if</span> <span class="nb">filter</span><span class="p">:</span>
+        <span class="n">sz</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="s">&#39;bandpass&#39;</span><span class="p">,</span> <span class="n">freqmin</span><span class="o">=</span><span class="n">fl</span><span class="p">,</span> <span class="n">freqmax</span><span class="o">=</span><span class="n">fh</span><span class="p">,</span> <span class="n">zerophase</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">align</span><span class="p">:</span>
+        <span class="n">deg</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">shift</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">gps2DistAzimuth</span><span class="p">(</span><span class="n">center_lat</span><span class="p">,</span> <span class="n">center_lon</span><span class="p">,</span> <span class="n">ev_lat</span><span class="p">,</span> <span class="n">ev_lon</span><span class="p">)</span>
+        <span class="n">deg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kilometer2degrees</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">1000.</span><span class="p">))</span>
+        <span class="n">tt</span> <span class="o">=</span> <span class="n">getTravelTimes</span><span class="p">(</span><span class="n">deg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ev_depth</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s">&#39;ak135&#39;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">tt</span><span class="p">:</span>
+            <span class="n">phase</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s">&#39;phase_name&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">phase</span> <span class="ow">in</span> <span class="n">align_phase</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">travel</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span>
+                    <span class="n">travel</span> <span class="o">=</span> <span class="n">ev_otime</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">+</span> <span class="n">travel</span>
+                    <span class="n">dtime</span> <span class="o">=</span> <span class="n">travel</span> <span class="o">-</span> <span class="n">stt</span><span class="o">.</span><span class="n">timestamp</span>
+                    <span class="n">shift</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dtime</span><span class="p">)</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="k">break</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">tr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sz</span><span class="p">):</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">gps2DistAzimuth</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">coordinates</span><span class="p">[</span><span class="s">&#39;latitude&#39;</span><span class="p">],</span>
+                                  <span class="n">tr</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">coordinates</span><span class="p">[</span><span class="s">&#39;longitude&#39;</span><span class="p">],</span>
+                                  <span class="n">ev_lat</span><span class="p">,</span> <span class="n">ev_lon</span><span class="p">)</span>
+            <span class="n">deg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kilometer2degrees</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="mf">1000.</span><span class="p">))</span>
+            <span class="n">tt</span> <span class="o">=</span> <span class="n">getTravelTimes</span><span class="p">(</span><span class="n">deg</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="n">ev_depth</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s">&#39;ak135&#39;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">tt</span><span class="p">:</span>
+                <span class="n">phase</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s">&#39;phase_name&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">phase</span> <span class="ow">in</span> <span class="n">align_phase</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">travel</span> <span class="o">=</span> <span class="n">item</span><span class="p">[</span><span class="s">&#39;time&#39;</span><span class="p">]</span>
+                        <span class="n">travel</span> <span class="o">=</span> <span class="n">ev_otime</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">+</span> <span class="n">travel</span>
+                        <span class="n">dtime</span> <span class="o">=</span> <span class="n">travel</span> <span class="o">-</span> <span class="n">stt</span><span class="o">.</span><span class="n">timestamp</span>
+                        <span class="n">shift</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dtime</span><span class="p">)</span>
+                    <span class="k">except</span><span class="p">:</span>
+                        <span class="k">break</span>
+        <span class="n">shift</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">shift</span><span class="p">)</span>
+        <span class="n">shift</span> <span class="o">-=</span> <span class="n">shift</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">AA</span><span class="o">.</span><span class="n">shifttrace_freq</span><span class="p">(</span><span class="n">sz</span><span class="p">,</span> <span class="o">-</span><span class="n">shift</span><span class="p">)</span>
+
+    <span class="n">baz</span> <span class="o">+=</span> <span class="mf">180.</span>
+    <span class="n">nbeam</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">slm</span> <span class="o">-</span> <span class="n">sll</span><span class="p">)</span><span class="o">/</span><span class="n">sls</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="c"># slowness grid: X min, X max, Y min, Y max, Slow Step</span>
+        <span class="n">sll</span><span class="o">=</span><span class="n">sll</span><span class="p">,</span> <span class="n">slm</span><span class="o">=</span><span class="n">slm</span><span class="p">,</span> <span class="n">sls</span><span class="o">=</span><span class="n">sls</span><span class="p">,</span> <span class="n">baz</span><span class="o">=</span><span class="n">baz</span><span class="p">,</span> <span class="n">stime</span><span class="o">=</span><span class="n">stt</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+        <span class="n">nthroot</span><span class="o">=</span><span class="n">nthroot</span><span class="p">,</span> <span class="n">etime</span><span class="o">=</span><span class="n">e</span><span class="p">,</span> <span class="n">correct_3dplane</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">static_3D</span><span class="o">=</span><span class="n">static3D</span><span class="p">,</span>
+        <span class="n">vel_cor</span><span class="o">=</span><span class="n">vel_corr</span><span class="p">)</span>
+
+    <span class="n">start</span> <span class="o">=</span> <span class="n">UTCDateTime</span><span class="p">()</span>
+    <span class="n">slow</span><span class="p">,</span> <span class="n">beams</span><span class="p">,</span> <span class="n">max_beam</span><span class="p">,</span> <span class="n">beam_max</span> <span class="o">=</span> <span class="n">AA</span><span class="o">.</span><span class="n">vespagram_baz</span><span class="p">(</span><span class="n">sz</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">print</span> <span class="s">&quot;Total time in routine: </span><span class="si">%f</span><span class="se">\n</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">UTCDateTime</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">sz</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">stats</span><span class="o">.</span><span class="n">sampling_rate</span>
+    <span class="c"># Plot the seismograms</span>
+    <span class="n">npts</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">beams</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">print</span> <span class="n">npts</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">npts</span><span class="o">/</span><span class="n">df</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="n">df</span><span class="p">)</span>
+    <span class="n">sll</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">slm</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">sls</span> <span class="o">*=</span> <span class="n">KM_PER_DEG</span>
+    <span class="n">slow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">sll</span><span class="p">,</span> <span class="n">slm</span><span class="p">,</span> <span class="n">sls</span><span class="p">)</span>
+    <span class="n">max_amp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">beams</span><span class="p">[:,</span> <span class="p">:])</span>
+    <span class="c">#min_amp = np.min(beams[:, :])</span>
+    <span class="n">scale</span> <span class="o">*=</span> <span class="n">sls</span>
+
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">plot_trace</span><span class="p">:</span>
+        <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">xrange</span><span class="p">(</span><span class="n">nbeam</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">max_beam</span><span class="p">:</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">sll</span> <span class="o">+</span> <span class="n">scale</span><span class="o">*</span><span class="n">beams</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">max_amp</span> <span class="o">+</span> <span class="n">i</span><span class="o">*</span><span class="n">sls</span><span class="p">,</span> <span class="s">&#39;r&#39;</span><span class="p">,</span>
+                         <span class="n">zorder</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">sll</span> <span class="o">+</span> <span class="n">scale</span><span class="o">*</span><span class="n">beams</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">/</span><span class="n">max_amp</span> <span class="o">+</span> <span class="n">i</span><span class="o">*</span><span class="n">sls</span><span class="p">,</span> <span class="s">&#39;k&#39;</span><span class="p">,</span>
+                         <span class="n">zorder</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;Time [s]&#39;</span><span class="p">)</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;slowness [s/deg]&#39;</span><span class="p">)</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">T</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">data_minmax</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">get_data_interval</span><span class="p">()</span>
+        <span class="n">minmax</span> <span class="o">=</span> <span class="p">[</span><span class="nb">min</span><span class="p">(</span><span class="n">slow</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">data_minmax</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">max</span><span class="p">(</span><span class="n">slow</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">data_minmax</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="o">*</span><span class="n">minmax</span><span class="p">)</span>
+    <span class="c">#####</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c">#step = (max_amp - min_amp)/100.</span>
+        <span class="c">#level = np.arange(min_amp, max_amp, step)</span>
+        <span class="c">#beams = beams.transpose()</span>
+        <span class="c">#cmap = cm.hot_r</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">rainbow</span>
+
+        <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_axes</span><span class="p">([</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">])</span>
+        <span class="c">#ax1.contour(slow,T,beams,level)</span>
+        <span class="c">#extent = (slow[0], slow[-1], \</span>
+        <span class="c">#               T[0], T[-1])</span>
+        <span class="n">extent</span> <span class="o">=</span> <span class="p">(</span><span class="n">T</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">T</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">slow</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">slow</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s">&#39;slowness [s/deg]&#39;</span><span class="p">)</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s">&#39;T [s]&#39;</span><span class="p">)</span>
+        <span class="n">beams</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">beams</span><span class="p">)</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">beams</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s">&quot;nearest&quot;</span><span class="p">,</span>
+                   <span class="n">extent</span><span class="o">=</span><span class="n">extent</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s">&#39;auto&#39;</span><span class="p">)</span>
+
+    <span class="c">####</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="s">&quot;BAZ: </span><span class="si">%.2f</span><span class="s"> Time </span><span class="si">%s</span><span class="s">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">baz</span><span class="o">-</span><span class="mf">180.</span><span class="p">,</span> <span class="n">stt</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">slow</span><span class="p">,</span> <span class="n">beams</span><span class="p">,</span> <span class="n">max_beam</span><span class="p">,</span> <span class="n">beam_max</span></div>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014, Joachim Wassermann, Tobias Megies, Lion Krischer.<br/>
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to MESS 2014 Workshop’s documentation! &mdash; MESS 2014 Workshop 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootswatch-3.0.0/united/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/javascript" src="_static/js/jquery-1.9.1.min.js"></script>
+    <script type="text/javascript" src="_static/js/jquery-fix.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-3.0.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="_static/bootstrap-sphinx.js"></script>
+    <link rel="top" title="MESS 2014 Workshop 0.1.0 documentation" href="#" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+
+  </head>
+  <body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">
+          MESS 2014 Workshop</a>
+        <span class="navbar-text navbar-version pull-left"><b>0.1.0</b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            <li class="divider-vertical"></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a href="#"
+     class="dropdown-toggle"
+     data-toggle="dropdown">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+    ></ul>
+</li>
+              
+                <li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown">Page <b class="caret"></b></a>
+  <ul class="dropdown-menu localtoc"><ul>
+<li><a class="reference internal" href="#">Welcome to MESS 2014 Workshop&#8217;s documentation!</a></li>
+</ul>
+</ul>
+</li>
+              
+            
+            
+              
+            
+            
+            
+            
+              <li class="hidden-sm">
+<div id="sourcelink">
+  <a href="_sources/index.txt"
+     rel="nofollow">Source</a>
+</div></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      
+  <div class="section" id="module-mess2014.mess2014">
+<span id="welcome-to-mess-2014-workshop-s-documentation"></span><h1>Welcome to MESS 2014 Workshop&#8217;s documentation!<a class="headerlink" href="#module-mess2014.mess2014" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="mess2014.mess2014.align_phases">
+<tt class="descclassname">mess2014.mess2014.</tt><tt class="descname">align_phases</tt><big>(</big><em>stream</em>, <em>event</em>, <em>inventory</em>, <em>phase_name</em>, <em>method='simple'</em><big>)</big><a class="reference internal" href="_modules/mess2014/mess2014.html#align_phases"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mess2014.mess2014.align_phases" title="Permalink to this definition">¶</a></dt>
+<dd><p>Aligns the waveforms with the theoretical travel times for some phase. The
+theoretical travel times are calculated with obspy.taup.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stream</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.core.stream.Stream</span></tt>) &#8211; Waveforms for the array processing.</li>
+<li><strong>event</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.core.event.Event</span></tt>) &#8211; The event for which to calculate phases.</li>
+<li><strong>inventory</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.station.inventory.Inventory</span></tt>) &#8211; Station metadata.</li>
+<li><strong>phase_name</strong> (<em>str</em>) &#8211; The name of the phase you want to align. Must be
+contained in all traces. Otherwise the behaviour is undefined.</li>
+<li><strong>method</strong> (<em>str</em>) &#8211; Method is either <cite>simple</cite> or <cite>fft</cite>. Simple will just shift
+the starttime of Trace, while &#8216;fft&#8217; will do the shift in the frequency
+domain. Defaults to <cite>simple</cite>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mess2014.mess2014.array_analysis_helper">
+<tt class="descclassname">mess2014.mess2014.</tt><tt class="descname">array_analysis_helper</tt><big>(</big><em>stream</em>, <em>inventory</em>, <em>method</em>, <em>frqlow</em>, <em>frqhigh</em>, <em>filter=True</em>, <em>baz_plot=True</em>, <em>static3D=False</em>, <em>vel_corr=4.8</em>, <em>wlen=-1</em>, <em>slx=(-10</em>, <em>10)</em>, <em>sly=(-10</em>, <em>10)</em>, <em>sls=0.5</em>, <em>array_response=True</em><big>)</big><a class="reference internal" href="_modules/mess2014/mess2014.html#array_analysis_helper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mess2014.mess2014.array_analysis_helper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Array analysis wrapper routine for MESS 2014.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stream</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.core.stream.Stream</span></tt>) &#8211; Waveforms for the array processing.</li>
+<li><strong>inventory</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.station.inventory.Inventory</span></tt>) &#8211; Station metadata for waveforms</li>
+<li><strong>method</strong> (<em>str</em>) &#8211; Method used for the array analysis
+(one of &#8220;FK&#8221;: Frequnecy Wavenumber, &#8220;DLS&#8221;: Delay and Sum,
+&#8220;PWS&#8221;: Phase Weighted Stack, &#8220;SWP&#8221;: Slowness Whitened Power).</li>
+<li><strong>filter</strong> (<em>bool</em>) &#8211; Whether to bandpass data to selected frequency range</li>
+<li><strong>frqlow</strong> (<em>float</em>) &#8211; Low corner of frequency range for array analysis</li>
+<li><strong>frqhigh</strong> (<em>float</em>) &#8211; High corner of frequency range for array analysis</li>
+<li><strong>baz_plot</strong> (<em>str</em>) &#8211; Whether to show backazimuth-slowness map (True) or
+slowness x-y map (False).</li>
+<li><strong>static3D</strong> (<em>bool</em>) &#8211; static correction of topography using <cite>vel_corr</cite> as
+velocity (slow!)</li>
+<li><strong>vel_corr</strong> (<em>float</em>) &#8211; Correction velocity for static topography correction in
+km/s.</li>
+<li><strong>wlen</strong> (<em>float</em>) &#8211; sliding window for analysis in seconds, use -1 to use the
+whole trace without windowing.</li>
+<li><strong>slx</strong> (<em>(float, float)</em>) &#8211; Min/Max slowness for analysis in x direction.</li>
+<li><strong>sly</strong> (<em>(float, float)</em>) &#8211; Min/Max slowness for analysis in y direction.</li>
+<li><strong>sls</strong> (<em>float</em>) &#8211; step width of slowness grid</li>
+<li><strong>array_response</strong> (<em>bool</em>) &#8211; superimpose array reponse function in plot (slow!)</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mess2014.mess2014.array_transfer_helper">
+<tt class="descclassname">mess2014.mess2014.</tt><tt class="descname">array_transfer_helper</tt><big>(</big><em>stream</em>, <em>inventory</em>, <em>sx=(-10</em>, <em>10)</em>, <em>sy=(-10</em>, <em>10)</em>, <em>sls=0.5</em>, <em>freqmin=0.1</em>, <em>freqmax=4.0</em>, <em>numfreqs=10</em>, <em>coordsys='lonlat'</em>, <em>correct3dplane=False</em>, <em>static3D=False</em>, <em>velcor=4.8</em><big>)</big><a class="reference internal" href="_modules/mess2014/mess2014.html#array_transfer_helper"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mess2014.mess2014.array_transfer_helper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Array Response wrapper routine for MESS 2014.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stream</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.core.stream.Stream</span></tt>) &#8211; Waveforms for the array processing.</li>
+<li><strong>inventory</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.station.inventory.Inventory</span></tt>) &#8211; Station metadata for waveforms</li>
+<li><strong>slx</strong> (<em>(float, float)</em>) &#8211; Min/Max slowness for analysis in x direction.</li>
+<li><strong>sly</strong> (<em>(float, float)</em>) &#8211; Min/Max slowness for analysis in y direction.</li>
+<li><strong>sls</strong> (<em>float</em>) &#8211; step width of slowness grid</li>
+<li><strong>frqmin</strong> (<em>float</em>) &#8211; Low corner of frequency range for array analysis</li>
+<li><strong>frqmax</strong> (<em>float</em>) &#8211; High corner of frequency range for array analysis</li>
+<li><strong>numfreqs</strong> (<em>int</em>) &#8211; number of frequency values used for computing array
+transfer function</li>
+<li><strong>coordsys</strong> (<em>string</em>) &#8211; defined coordingate system of stations (lonlat or km)</li>
+<li><strong>correct_3dplane</strong> (<em>bool</em>) &#8211; correct for an inclined surface (not used)</li>
+<li><strong>static_3D</strong> (<em>bool</em>) &#8211; correct topography</li>
+<li><strong>velcor</strong> (<em>float</em>) &#8211; velocity used for static_3D correction</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mess2014.mess2014.attach_coordinates_to_traces">
+<tt class="descclassname">mess2014.mess2014.</tt><tt class="descname">attach_coordinates_to_traces</tt><big>(</big><em>stream</em>, <em>inventory</em>, <em>event=None</em><big>)</big><a class="reference internal" href="_modules/mess2014/mess2014.html#attach_coordinates_to_traces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mess2014.mess2014.attach_coordinates_to_traces" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to add coordinates to traces.</p>
+<p>It extracts coordinates from a <tt class="xref py py-class docutils literal"><span class="pre">obspy.station.inventory.Inventory</span></tt>
+object and writes them to each trace&#8217;s stats attribute. If an event is
+given, the distance in degree will also be attached.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stream</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.core.stream.Stream</span></tt>) &#8211; Waveforms for the array processing.</li>
+<li><strong>inventory</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.station.inventory.Inventory</span></tt>) &#8211; Station metadata for waveforms</li>
+<li><strong>event</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.core.event.Event</span></tt>) &#8211; If the event is given, the event distance in degree will also
+be attached to the traces.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mess2014.mess2014.show_distance_plot">
+<tt class="descclassname">mess2014.mess2014.</tt><tt class="descname">show_distance_plot</tt><big>(</big><em>stream</em>, <em>event</em>, <em>inventory</em>, <em>starttime</em>, <em>endtime</em>, <em>plot_travel_times=True</em><big>)</big><a class="reference internal" href="_modules/mess2014/mess2014.html#show_distance_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mess2014.mess2014.show_distance_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots distance dependent seismogramm sections.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stream</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.core.stream.Stream</span></tt>) &#8211; The waveforms.</li>
+<li><strong>event</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.core.event.Event</span></tt>) &#8211; The event.</li>
+<li><strong>inventory</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.station.inventory.Inventory</span></tt>) &#8211; The station information.</li>
+<li><strong>starttime</strong> (<em>UTCDateTime</em>) &#8211; starttime of traces to be plotted</li>
+<li><strong>endttime</strong> (<em>UTCDateTime</em>) &#8211; endttime of traces to be plotted</li>
+<li><strong>plot_travel_times</strong> &#8211; flag whether phases are marked as traveltime plots
+in the section obspy.taup is used to calculate the phases</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mess2014.mess2014.vespagram">
+<tt class="descclassname">mess2014.mess2014.</tt><tt class="descname">vespagram</tt><big>(</big><em>stream, ev, inv, method, frqlow, frqhigh, baz, scale, nthroot=4, filter=True, static3D=False, vel_corr=4.8, sl=(0.0, 10.0, 0.5), align=False, align_phase=['P', 'Pdiff'], plot_trace=True</em><big>)</big><a class="reference internal" href="_modules/mess2014/mess2014.html#vespagram"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mess2014.mess2014.vespagram" title="Permalink to this definition">¶</a></dt>
+<dd><p>vespagram wrapper routine for MESS 2014.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>stream</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.core.stream.Stream</span></tt>) &#8211; Waveforms for the array processing.</li>
+<li><strong>inventory</strong> (<tt class="xref py py-class docutils literal"><span class="pre">obspy.station.inventory.Inventory</span></tt>) &#8211; Station metadata for waveforms</li>
+<li><strong>method</strong> (<em>str</em>) &#8211; Method used for the array analysis
+(one of &#8220;DLS&#8221;: Delay and Sum, &#8220;PWS&#8221;: Phase Weighted Stack).</li>
+<li><strong>frqlow</strong> (<em>float</em>) &#8211; Low corner of frequency range for array analysis</li>
+<li><strong>frqhigh</strong> (<em>float</em>) &#8211; High corner of frequency range for array analysis</li>
+<li><strong>baz</strong> &#8211; pre-defined (theoretical or calculated) backazimuth used for calculation</li>
+<li><strong>scale</strong> (<em>float</em>) &#8211; scale for plotting</li>
+<li><strong>nthroot</strong> (<em>int</em>) &#8211; estimating the nthroot for calculation of the beam</li>
+<li><strong>filter</strong> (<em>bool</em>) &#8211; Whether to bandpass data to selected frequency range</li>
+<li><strong>static3D</strong> (<em>bool</em>) &#8211; static correction of topography using <cite>vel_corr</cite> as
+velocity (slow!)</li>
+<li><strong>vel_corr</strong> (<em>float</em>) &#8211; Correction velocity for static topography correction in
+km/s.</li>
+<li><strong>sl</strong> (<em>(float, float,float)</em>) &#8211; Min/Max and stepwidthslowness for analysis</li>
+<li><strong>align</strong> (<em>bool</em>) &#8211; whether to align the vespagram to a certain phase</li>
+<li><strong>align_phase</strong> &#8211; phase to be aligned with (might be a list if simulateneous arivials are expected (P,PcP,Pdif)</li>
+<li><strong>plot_trace</strong> &#8211; if True plot the vespagram as wiggle plot, if False as density map</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2014, Joachim Wassermann, Tobias Megies, Lion Krischer.<br/>
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
