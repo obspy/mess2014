@@ -768,7 +768,7 @@ def vespagram(stream, ev, inv, method, frqlow, frqhigh, baz, scale, nthroot=4,
         #ax1.contour(slow,T,beams,level)
         #extent = (slow[0], slow[-1], \
         #               T[0], T[-1])
-        extent = (T[0], T[-1], slow[0], slow[-1])
+        extent = (T[0], T[-1], slow[0] - sls * 0.5, slow[-1] + sls * 0.5)
 
         ax1.set_ylabel('slowness [s/deg]')
         ax1.set_xlabel('T [s]')
